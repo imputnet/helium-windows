@@ -22,12 +22,14 @@ import shutil
 import subprocess
 import ctypes
 from pathlib import Path
+import resources.generate
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'helium-chromium' / 'utils'))
 import downloads
 import domain_substitution
 import name_substitution
 import helium_version
+import replace_resources
 import prune_binaries
 import patches
 from _common import ENCODING, USE_REGISTRY, ExtractorEnum, get_logger
@@ -272,6 +274,21 @@ def main():
         with open(chrome_version_path, "a") as f:
             for name, version in version_parts.items():
                 helium_version.append_version(f, name, version)
+
+        # Copy resources
+        # First, generate and copy Windows-specific resources
+        resources.generate.generate_icons(_ROOT_DIR / 'resources')
+        replace_resources.copy_resources(
+            _ROOT_DIR / 'resources' / 'platform_resources.txt',
+            _ROOT_DIR / 'resources',
+            source_tree
+        )
+        # Then common helium-chromium resources
+        replace_resources.copy_resources(
+            _ROOT_DIR / 'helium-chromium' / 'resources' / 'helium_resources.txt',
+            _ROOT_DIR / 'helium-chromium' / 'resources',
+            source_tree
+        )
 
     # Check if rust-toolchain folder has been populated
     HOST_CPU_IS_64BIT = sys.maxsize > 2**32
