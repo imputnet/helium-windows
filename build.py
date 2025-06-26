@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / 'helium-chromium' / 'ut
 import downloads
 import domain_substitution
 import name_substitution
+import helium_version
 import prune_binaries
 import patches
 from _common import ENCODING, USE_REGISTRY, ExtractorEnum, get_logger
@@ -260,6 +261,14 @@ def main():
             source_tree,
             None,
         ))
+
+        # Set version
+        version_parts = helium_version.get_version_parts(_ROOT_DIR / 'helium-chromium', _ROOT_DIR)
+        chrome_version_path = source_tree / "chrome" / "VERSION"
+        helium_version.check_existing_version(chrome_version_path)
+        with open(chrome_version_path, "a") as f:
+            for name, version in version_parts.items():
+                helium_version.append_version(f, name, version)
 
     # Check if rust-toolchain folder has been populated
     HOST_CPU_IS_64BIT = sys.maxsize > 2**32
