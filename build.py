@@ -231,13 +231,14 @@ def main():
         )
 
         # Substitute domains
-        domain_substitution_list = (_ROOT_DIR / 'helium-chromium' / 'domain_substitution.list') if args.tarball else (_ROOT_DIR  / 'domain_substitution.list')
-        domain_substitution.apply_substitution(
-            _ROOT_DIR / 'helium-chromium' / 'domain_regex.list',
-            domain_substitution_list,
-            source_tree,
-            None
-        )
+        if not args.dev:
+            domain_substitution_list = (_ROOT_DIR / 'helium-chromium' / 'domain_substitution.list') if args.tarball else (_ROOT_DIR  / 'domain_substitution.list')
+            domain_substitution.apply_substitution(
+                _ROOT_DIR / 'helium-chromium' / 'domain_regex.list',
+                domain_substitution_list,
+                source_tree,
+                None
+            )
 
     # Check if rust-toolchain folder has been populated
     HOST_CPU_IS_64BIT = sys.maxsize > 2**32
