@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -41,7 +41,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -66,7 +66,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -91,7 +91,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -116,7 +116,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -141,7 +141,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -166,7 +166,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -191,7 +191,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -216,7 +216,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -241,7 +241,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -266,7 +266,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -291,7 +291,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -316,7 +316,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -341,7 +341,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -366,7 +366,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -391,7 +391,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -416,7 +416,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -442,7 +442,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -468,7 +468,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -494,7 +494,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -520,7 +520,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -546,7 +546,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -572,7 +572,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -598,7 +598,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -624,7 +624,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -650,7 +650,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -676,7 +676,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -702,7 +702,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -728,7 +728,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -754,7 +754,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -780,7 +780,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -806,7 +806,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -832,7 +832,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -858,7 +858,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -884,7 +884,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -910,7 +910,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -936,7 +936,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -962,7 +962,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -988,7 +988,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1014,7 +1014,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1040,7 +1040,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1066,7 +1066,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1092,7 +1092,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1118,7 +1118,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1144,7 +1144,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1170,7 +1170,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1196,7 +1196,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1222,7 +1222,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Init
-        run: Copy-Item -Path . -Destination "C:\ungoogled-chromium-windows" -Recurse
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
@@ -1243,22 +1243,22 @@ jobs:
       - name: Download package
         uses: actions/download-artifact@v4
         with:
-          name: chromium
+          name: helium
       - name: Download x86 package
         uses: actions/download-artifact@v4
         with:
-          name: chromium-x86
+          name: helium-x86
       - name: Download arm package
         uses: actions/download-artifact@v4
         with:
-          name: chromium-arm
+          name: helium-arm
       - name: Publish release
         id: publish
         uses: softprops/action-gh-release@v1
         with:
           fail_on_unmatched_files: true
           files: |
-            ungoogled-chromium*
+            helium*
     outputs:
       assets: ${{ steps.publish.outputs.assets }}
   publish-winget:

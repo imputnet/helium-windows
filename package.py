@@ -18,13 +18,13 @@ import platform
 from pathlib import Path
 import shutil
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / 'ungoogled-chromium' / 'utils'))
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'helium-chromium' / 'utils'))
 import filescfg
 from _common import ENCODING, get_chromium_version
 sys.path.pop(0)
 
 def _get_release_revision():
-    revision_path = Path(__file__).resolve().parent / 'ungoogled-chromium' / 'revision.txt'
+    revision_path = Path(__file__).resolve().parent / 'helium-chromium' / 'revision.txt'
     return revision_path.read_text(encoding=ENCODING).strip()
 
 def _get_packaging_revision():
@@ -62,7 +62,7 @@ def main():
     build_outputs = Path('build/src/out/Default')
 
     shutil.copyfile('build/src/out/Default/mini_installer.exe',
-        'build/ungoogled-chromium_{}-{}.{}_installer_{}.exe'.format(
+        'build/helium_{}-{}.{}_installer_{}.exe'.format(
             get_chromium_version(), _get_release_revision(),
             _get_packaging_revision(), _get_target_cpu(build_outputs)))
 
@@ -73,7 +73,7 @@ def main():
     except FileNotFoundError:
         pass
 
-    output = Path('build/ungoogled-chromium_{}-{}.{}_windows_{}.zip'.format(
+    output = Path('build/helium_{}-{}.{}_windows_{}.zip'.format(
         get_chromium_version(), _get_release_revision(),
         _get_packaging_revision(), _get_target_cpu(build_outputs)))
 

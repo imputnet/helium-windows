@@ -22,10 +22,10 @@ async function run() {
 
     if (from_artifact) {
         const artifactInfo = await artifact.getArtifact(artifactName);
-        await artifact.downloadArtifact(artifactInfo.artifact.id, {path: 'C:\\ungoogled-chromium-windows\\build'});
-        await exec.exec('7z', ['x', 'C:\\ungoogled-chromium-windows\\build\\artifacts.zip',
-            '-oC:\\ungoogled-chromium-windows\\build', '-y']);
-        await io.rmRF('C:\\ungoogled-chromium-windows\\build\\artifacts.zip');
+        await artifact.downloadArtifact(artifactInfo.artifact.id, {path: 'C:\\helium-windows\\build'});
+        await exec.exec('7z', ['x', 'C:\\helium-windows\\build\\artifacts.zip',
+            '-oC:\\helium-windows\\build', '-y']);
+        await io.rmRF('C:\\helium-windows\\build\\artifacts.zip');
     }
 
     const args = ['build.py', '--ci']
@@ -34,19 +34,19 @@ async function run() {
     if (arm)
         args.push('--arm')
     await exec.exec('python', ['-m', 'pip', 'install', 'httplib2'], {
-        cwd: 'C:\\ungoogled-chromium-windows',
+        cwd: 'C:\\helium-windows',
         ignoreReturnCode: true
     });
     const retCode = await exec.exec('python', args, {
-        cwd: 'C:\\ungoogled-chromium-windows',
+        cwd: 'C:\\helium-windows',
         ignoreReturnCode: true
     });
     if (retCode === 0) {
         core.setOutput('finished', true);
-        const globber = await glob.create('C:\\ungoogled-chromium-windows\\build\\ungoogled-chromium*',
+        const globber = await glob.create('C:\\helium-windows\\build\\helium*',
             {matchDirectories: false});
         let packageList = await globber.glob();
-        const finalArtifactName = x86 ? 'chromium-x86' : (arm ? 'chromium-arm' : 'chromium');
+        const finalArtifactName = x86 ? 'helium-x86' : (arm ? 'helium-arm' : 'helium');
         for (let i = 0; i < 5; ++i) {
             try {
                 await artifact.deleteArtifact(finalArtifactName);
@@ -55,7 +55,7 @@ async function run() {
             }
             try {
                 await artifact.uploadArtifact(finalArtifactName, packageList,
-                    'C:\\ungoogled-chromium-windows\\build', {retentionDays: 1, compressionLevel: 0});
+                    'C:\\helium-windows\\build', {retentionDays: 1, compressionLevel: 0});
                 break;
             } catch (e) {
                 console.error(`Upload artifact failed: ${e}`);
@@ -65,8 +65,8 @@ async function run() {
         }
     } else {
         await new Promise(r => setTimeout(r, 5000));
-        await exec.exec('7z', ['a', '-tzip', 'C:\\ungoogled-chromium-windows\\artifacts.zip',
-            'C:\\ungoogled-chromium-windows\\build\\src', '-mx=3', '-mtc=on'], {ignoreReturnCode: true});
+        await exec.exec('7z', ['a', '-tzip', 'C:\\helium-windows\\artifacts.zip',
+            'C:\\helium-windows\\build\\src', '-mx=3', '-mtc=on'], {ignoreReturnCode: true});
         for (let i = 0; i < 5; ++i) {
             try {
                 await artifact.deleteArtifact(artifactName);
@@ -74,8 +74,8 @@ async function run() {
                 // ignored
             }
             try {
-                await artifact.uploadArtifact(artifactName, ['C:\\ungoogled-chromium-windows\\artifacts.zip'],
-                    'C:\\ungoogled-chromium-windows', {retentionDays: 1, compressionLevel: 0});
+                await artifact.uploadArtifact(artifactName, ['C:\\helium-windows\\artifacts.zip'],
+                    'C:\\helium-windows', {retentionDays: 1, compressionLevel: 0});
                 break;
             } catch (e) {
                 console.error(`Upload artifact failed: ${e}`);
