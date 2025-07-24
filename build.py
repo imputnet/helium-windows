@@ -232,22 +232,22 @@ def main():
         get_logger().info('Unpacking downloads...')
         downloads.unpack_downloads(download_info_win, downloads_cache, None, source_tree, extractors)
 
-        # Apply patches
-        # First, ungoogled-chromium-patches
-        patches.apply_patches(
-            patches.generate_patches_from_series(_ROOT_DIR / 'helium-chromium' / 'patches', resolve=True),
-            source_tree,
-            patch_bin_path=(source_tree / _PATCH_BIN_RELPATH)
-        )
-        # Then Windows-specific patches
-        patches.apply_patches(
-            patches.generate_patches_from_series(_ROOT_DIR / 'patches', resolve=True),
-            source_tree,
-            patch_bin_path=(source_tree / _PATCH_BIN_RELPATH)
-        )
-
-        # Substitute domains
         if not args.dev:
+            # Apply patches
+            # First, ungoogled-chromium-patches
+            patches.apply_patches(
+                patches.generate_patches_from_series(_ROOT_DIR / 'helium-chromium' / 'patches', resolve=True),
+                source_tree,
+                patch_bin_path=(source_tree / _PATCH_BIN_RELPATH)
+            )
+            # Then Windows-specific patches
+            patches.apply_patches(
+                patches.generate_patches_from_series(_ROOT_DIR / 'patches', resolve=True),
+                source_tree,
+                patch_bin_path=(source_tree / _PATCH_BIN_RELPATH)
+            )
+
+            # Substitute domains
             domain_substitution_list = (_ROOT_DIR / 'helium-chromium' / 'domain_substitution.list') if args.tarball else (_ROOT_DIR  / 'domain_substitution.list')
             domain_substitution.apply_substitution(
                 _ROOT_DIR / 'helium-chromium' / 'domain_regex.list',
@@ -256,11 +256,14 @@ def main():
                 None
             )
 
-        # Substitute names
-        asyncio.run(name_substitution.do_substitution(
-            source_tree,
-            None,
-        ))
+            # Substitute names
+            asyncio.run(name_substitution.do_substitution(
+                source_tree,
+                None,
+            ))
+        else:
+            print("Apply patches using quilt, then press Enter")
+            input()
 
         # Set version
         version_parts = helium_version.get_version_parts(_ROOT_DIR / 'helium-chromium', _ROOT_DIR)
