@@ -1,1 +1,3 @@
 /build
+/.gcs_entries
+__pycache__
