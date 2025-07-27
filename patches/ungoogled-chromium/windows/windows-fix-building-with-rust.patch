@@ -60,37 +60,6 @@
  
    # Only for usage from third-party crates. Add the crate to
    # //third_party/rust/chromium_crates_io/Cargo.toml to use
---- a/third_party/rust/windows_i686_msvc/v0_52/BUILD.gn
-+++ b/third_party/rust/windows_i686_msvc/v0_52/BUILD.gn
-@@ -13,8 +13,8 @@ cargo_crate("lib") {
-   epoch = "0.52"
-   enabled = is_win && current_cpu == "x86"
-   crate_type = "rlib"
--  crate_root = "//third_party/rust/chromium_crates_io/vendor/windows_i686_msvc-v0_52/src/lib.rs"
--  sources = [ "//third_party/rust/chromium_crates_io/vendor/windows_i686_msvc-v0_52/src/lib.rs" ]
-+  crate_root = "//third_party/rust/chromium_crates_io/vendor/windows-rs-0.52.0/crates/targets/i686_msvc/src/lib.rs"
-+  sources = [ "//third_party/rust/chromium_crates_io/vendor/windows-rs-0.52.0/crates/targets/i686_msvc/src/lib.rs" ]
-   inputs = []
- 
-   build_native_rust_unit_tests = false
-@@ -22,13 +22,13 @@ cargo_crate("lib") {
-   cargo_pkg_authors = "Microsoft"
-   cargo_pkg_name = "windows_i686_msvc"
-   cargo_pkg_description = "Import lib for Windows"
--  cargo_pkg_version = "0.52.6"
-+  cargo_pkg_version = "0.52.0"
- 
-   allow_unsafe = false
- 
--  build_root = "//third_party/rust/chromium_crates_io/vendor/windows_i686_msvc-v0_52/build.rs"
--  build_sources = [ "//third_party/rust/chromium_crates_io/vendor/windows_i686_msvc-v0_52/build.rs" ]
--  native_libs = [ "//third_party/rust/chromium_crates_io/vendor/windows_i686_msvc-v0_52/src/../lib/windows.0.52.0.lib" ]
-+  build_root = "//third_party/rust/chromium_crates_io/vendor/windows-rs-0.52.0/crates/targets/i686_msvc/build.rs"
-+  build_sources = [ "//third_party/rust/chromium_crates_io/vendor/windows-rs-0.52.0/crates/targets/i686_msvc/build.rs" ]
-+  native_libs = [ "//third_party/rust/chromium_crates_io/vendor/windows-rs-0.52.0/crates/targets/i686_msvc/lib/windows.0.52.0.lib" ]
- 
-   # Only for usage from third-party crates. Add the crate to
-   # //third_party/rust/chromium_crates_io/Cargo.toml to use
 --- a/third_party/rust/windows_x86_64_msvc/v0_52/BUILD.gn
 +++ b/third_party/rust/windows_x86_64_msvc/v0_52/BUILD.gn
 @@ -13,8 +13,8 @@ cargo_crate("lib") {

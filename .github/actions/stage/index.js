@@ -9,7 +9,6 @@ async function run() {
     })
     const finished = core.getBooleanInput('finished', {required: true});
     const from_artifact = core.getBooleanInput('from_artifact', {required: true});
-    const x86 = core.getBooleanInput('x86', {required: false})
     const arm = core.getBooleanInput('arm', {required: false})
     console.log(`finished: ${finished}, artifact: ${from_artifact}`);
     if (finished) {
@@ -18,7 +17,7 @@ async function run() {
     }
 
     const artifact = new DefaultArtifactClient();
-    const artifactName = x86 ? 'build-artifact-x86' : (arm ? 'build-artifact-arm' : 'build-artifact');
+    const artifactName = arm ? 'build-artifact-arm' : 'build-artifact';
 
     if (from_artifact) {
         const artifactInfo = await artifact.getArtifact(artifactName);
@@ -29,8 +28,6 @@ async function run() {
     }
 
     const args = ['build.py', '--ci']
-    if (x86)
-        args.push('--x86')
     if (arm)
         args.push('--arm')
     await exec.exec('python', ['-m', 'pip', 'install', 'httplib2'], {
@@ -46,7 +43,7 @@ async function run() {
         const globber = await glob.create('C:\\helium-windows\\build\\helium*',
             {matchDirectories: false});
         let packageList = await globber.glob();
-        const finalArtifactName = x86 ? 'helium-x86' : (arm ? 'helium-arm' : 'helium');
+        const finalArtifactName = arm ? 'helium-arm' : 'helium';
         for (let i = 0; i < 5; ++i) {
             try {
                 await artifact.deleteArtifact(finalArtifactName);

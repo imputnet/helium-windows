@@ -7,10 +7,6 @@ inputs:
   from_artifact:
     description: If a previous stage already uploaded build artifacts, the stage will resume building
     required: true
-  x86:
-    description: Build x86 binary
-    required: false
-    default: false
   arm:
     description: Build arm binary
     required: false
