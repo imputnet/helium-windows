@@ -827,11 +827,11 @@ jobs:
       - name: Download package
         uses: actions/download-artifact@v4
         with:
-          name: helium
+          name: helium-x86_64
       - name: Download arm package
         uses: actions/download-artifact@v4
         with:
-          name: helium-arm
+          name: helium-arm64
       - name: Publish release
         id: publish
         uses: softprops/action-gh-release@v1

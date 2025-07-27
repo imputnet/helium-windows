@@ -17,7 +17,7 @@ async function run() {
     }
 
     const artifact = new DefaultArtifactClient();
-    const artifactName = arm ? 'build-artifact-arm' : 'build-artifact';
+    const artifactName = arm ? 'build-artifact-arm64' : 'build-artifact-x86_64';
 
     if (from_artifact) {
         const artifactInfo = await artifact.getArtifact(artifactName);
@@ -43,7 +43,7 @@ async function run() {
         const globber = await glob.create('C:\\helium-windows\\build\\helium*',
             {matchDirectories: false});
         let packageList = await globber.glob();
-        const finalArtifactName = arm ? 'helium-arm' : 'helium';
+        const finalArtifactName = arm ? 'helium-arm64' : 'helium-x86_64';
         for (let i = 0; i < 5; ++i) {
             try {
                 await artifact.deleteArtifact(finalArtifactName);
