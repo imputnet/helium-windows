@@ -209,7 +209,7 @@ def main():
 
 
         # Prune binaries
-        pruning_list = (_ROOT_DIR / 'helium-chromium' / 'pruning.list') if args.tarball else (_ROOT_DIR  / 'pruning.list')
+        pruning_list = _ROOT_DIR / 'helium-chromium' / 'pruning.list'
         unremovable_files = prune_binaries.prune_files(
             source_tree,
             pruning_list.read_text(encoding=ENCODING).splitlines()
@@ -246,7 +246,7 @@ def main():
             )
 
             # Substitute domains
-            domain_substitution_list = (_ROOT_DIR / 'helium-chromium' / 'domain_substitution.list') if args.tarball else (_ROOT_DIR  / 'domain_substitution.list')
+            domain_substitution_list = _ROOT_DIR / 'helium-chromium' / 'domain_substitution.list'
             domain_substitution.apply_substitution(
                 _ROOT_DIR / 'helium-chromium' / 'domain_regex.list',
                 domain_substitution_list,
