@@ -136,6 +136,8 @@ def main():
         '--ci',
         action='store_true'
     )
+    parser.add_argument('--build-installer', action='store_true')
+    parser.add_argument('--do-package', action='store_true')
     parser.add_argument(
         '--arm',
         action='store_true'
@@ -363,11 +365,15 @@ def main():
 
     # Run ninja
     if args.ci:
-        _run_build_process_timeout('third_party\\ninja\\ninja.exe', '-C', 'out\\Default', 'chrome',
-                                   'chromedriver', 'mini_installer', timeout=3.5*60*60)
-        # package
-        os.chdir(_ROOT_DIR)
-        subprocess.run([sys.executable, 'package.py'])
+        if args.do_package:
+            os.chdir(_ROOT_DIR)
+            subprocess.run([sys.executable, 'package.py'])
+        elif not args.build_installer:
+            _run_build_process_timeout('third_party\\ninja\\ninja.exe', '-C', 'out\\Default', 'chrome',
+                                       'chromedriver', 'setup', timeout=3.5*60*60)
+        else:
+            _run_build_process_timeout('third_party\\ninja\\ninja.exe', '-C', 'out\\Default',
+                                       'mini_installer', timeout=3.5*60*60)
     else:
         _run_build_process('third_party\\ninja\\ninja.exe', '-C', 'out\\Default', 'chrome',
                            'chromedriver', 'mini_installer')

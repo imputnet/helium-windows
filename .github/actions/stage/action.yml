@@ -11,9 +11,24 @@ inputs:
     description: Build arm binary
     required: false
     default: false
+  gen_installer:
+    description: Generate the installer after signing
+    required: false
+    default: false
+  do_package:
+    description: Run package.py after installer signing
+    required: false
+    default: false
+  make_sign_artifact:
+    description: Make a smaller artifact for code signing purposes
+    required: false
+    default: false
 outputs:
   finished:
     description: If a previous stage already finished the build, the stage will set all output variables to the input ones and exit
+  artifact_id:
+    description: id of the build dir artifact
+
 runs:
   using: 'node16'
   main: 'index.js'

@@ -401,8 +401,61 @@ jobs:
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+          make_sign_artifact: true
+
+      - name: Sign Helium binaries
+        uses: signpath/github-action-submit-signing-request@v1.1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          artifact-configuration-slug: stage1
+          github-artifact-id: ${{ steps.stage.outputs.artifact_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-for-completion-timeout-in-seconds: 9000
+          service-unavailable-timeout-in-seconds: 9000
+          download-signed-artifact-timeout-in-seconds: 9000
+          output-artifact-directory: signed
+      - name: Copy signed binaries
+        run: Copy-Item -Path "signed\*" -Destination "C:\helium-windows\build\src\out\Default\" -Recurse
+
+      - name: Build Helium installer
+        id: stage2
+        uses: ./.github/actions/stage
+        with:
+          finished: ${{ join(needs.*.outputs.finished) }}
+          gen_installer: true
+          make_sign_artifact: true
+          from_artifact: false
+
+      - name: Sign Helium installer
+        uses: signpath/github-action-submit-signing-request@v1.1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          artifact-configuration-slug: stage2
+          github-artifact-id: ${{ steps.stage2.outputs.artifact_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-for-completion-timeout-in-seconds: 9000
+          service-unavailable-timeout-in-seconds: 9000
+          download-signed-artifact-timeout-in-seconds: 9000
+          output-artifact-directory: signed
+      - name: Copy signed installer
+        run: Copy-Item -Path "signed\mini_installer.exe" -Destination "C:\helium-windows\build\src\out\Default\"
+
+      - name: Generate user-facing artifacts
+        id: stage3
+        uses: ./.github/actions/stage
+        with:
+          finished: ${{ join(needs.*.outputs.finished) }}
+          do_package: true
+          from_artifact: false
+
     outputs:
-      finished: ${{ steps.stage.outputs.finished }}
+      finished: ${{ steps.stage3.outputs.finished }}
 
   build-arm-1:
     runs-on: windows-2022
@@ -817,8 +870,62 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+          make_sign_artifact: true
+
+      - name: Sign Helium binaries
+        uses: signpath/github-action-submit-signing-request@v1.1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          artifact-configuration-slug: stage1
+          github-artifact-id: ${{ steps.stage.outputs.artifact_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-for-completion-timeout-in-seconds: 9000
+          service-unavailable-timeout-in-seconds: 9000
+          download-signed-artifact-timeout-in-seconds: 9000
+          output-artifact-directory: signed
+      - name: Copy signed binaries
+        run: Copy-Item -Path "signed\*" -Destination "C:\helium-windows\build\src\out\Default\" -Recurse
+
+      - name: Build Helium installer
+        id: stage2
+        uses: ./.github/actions/stage
+        with:
+          finished: ${{ join(needs.*.outputs.finished) }}
+          arm: true
+          gen_installer: true
+          make_sign_artifact: true
+          from_artifact: false
+
+      - name: Sign Helium installer
+        uses: signpath/github-action-submit-signing-request@v1.1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          artifact-configuration-slug: stage2
+          github-artifact-id: ${{ steps.stage2.outputs.artifact_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-for-completion-timeout-in-seconds: 9000
+          service-unavailable-timeout-in-seconds: 9000
+          download-signed-artifact-timeout-in-seconds: 9000
+          output-artifact-directory: signed
+      - name: Copy signed installer
+        run: Copy-Item -Path "signed\mini_installer.exe" -Destination "C:\helium-windows\build\src\out\Default\"
+
+      - name: Generate user-facing artifacts
+        id: stage3
+        uses: ./.github/actions/stage
+        with:
+          finished: ${{ join(needs.*.outputs.finished) }}
+          arm: true
+          do_package: true
+          from_artifact: false
     outputs:
-      finished: ${{ steps.stage.outputs.finished }}
+      finished: ${{ steps.stage3.outputs.finished }}
 
   publish-release:
     needs: [build-16, build-arm-16]
