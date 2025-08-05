@@ -2,7 +2,7 @@ name: Build and release binaries
 on:  
   push:
     tags:
-      - '*'
+      - '[0-9]+.[0-9]+.[0-9]+.[0-9]+'
 jobs:
   build-1:
     runs-on: windows-2022
