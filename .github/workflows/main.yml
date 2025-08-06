@@ -6,7 +6,7 @@
 #
 
 name: Build and release binaries
-on:  
+on:
   push:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+.[0-9]+'
@@ -27,12 +27,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: false
           from_artifact: false
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-2:
@@ -52,12 +57,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-3:
@@ -77,12 +87,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-4:
@@ -102,12 +117,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-5:
@@ -127,12 +147,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-6:
@@ -152,12 +177,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-7:
@@ -177,12 +207,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-8:
@@ -202,12 +237,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-9:
@@ -227,12 +267,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-10:
@@ -252,12 +297,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-11:
@@ -277,12 +327,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-12:
@@ -302,12 +357,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-13:
@@ -327,12 +387,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-14:
@@ -352,12 +417,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-15:
@@ -377,12 +447,17 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
         with:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-final:
@@ -480,6 +555,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -487,6 +564,9 @@ jobs:
           finished: false
           from_artifact: false
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-2:
@@ -506,6 +586,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -513,6 +595,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-3:
@@ -532,6 +617,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -539,6 +626,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-4:
@@ -558,6 +648,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -565,6 +657,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-5:
@@ -584,6 +679,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -591,6 +688,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-6:
@@ -610,6 +710,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -617,6 +719,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-7:
@@ -636,6 +741,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -643,6 +750,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-8:
@@ -662,6 +772,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -669,6 +781,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-9:
@@ -688,6 +803,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -695,6 +812,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-10:
@@ -714,6 +834,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -721,6 +843,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-11:
@@ -740,6 +865,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -747,6 +874,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-12:
@@ -766,6 +896,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -773,6 +905,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-13:
@@ -792,6 +927,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -799,6 +936,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-14:
@@ -818,6 +958,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -825,6 +967,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-15:
@@ -844,6 +989,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -851,6 +998,9 @@ jobs:
           finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-final:

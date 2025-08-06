@@ -31,6 +31,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -45,6 +47,9 @@ jobs:
           {%- if arch == "arm" %}
           arm: true
           {%- endif %}
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
     outputs:
       finished: {% raw %}${{ steps.stage.outputs.finished }}{% endraw %}
 {%- endfor %}
