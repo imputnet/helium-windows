@@ -1,0 +1,163 @@
+{% include ".disclaimer.txt" -%}
+#
+# % jinja2 main.yml.j2 -o main.yml
+#
+
+name: Build and release binaries
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+.[0-9]+'
+jobs:
+{%- for arch in ["", "arm"] %}
+{%- set prefix = "build"    ~ ('-arm' if arch == 'arm' else '') %}
+{%- for n in range(15) %}
+  {{ prefix }}-{{ n + 1 }}:
+{%- if n %}
+    needs: {{ prefix }}-{{ n }}
+{%- endif %}
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Init
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
+      - name: Setup Stage
+        run: npm install
+        working-directory: ./.github/actions/stage
+      - name: Run Stage
+        id: stage
+        uses: ./.github/actions/stage
+        with:
+          finished:
+          {%- if n -%}
+            {% raw %} ${{ join(needs.*.outputs.finished) }}{% endraw %}
+          {%- else -%}
+            {{ " false" }}
+          {%- endif %}
+          from_artifact: {{ "true" if n else "false" }}
+          {%- if arch == "arm" %}
+          arm: true
+          {%- endif %}
+    outputs:
+      finished: {% raw %}${{ steps.stage.outputs.finished }}{% endraw %}
+{%- endfor %}
+  {{ prefix }}-final:
+    needs: {{ prefix }}-15
+{%- raw %}
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Init
+        run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
+      - name: Setup Stage
+        run: npm install
+        working-directory: ./.github/actions/stage
+      - name: Run Stage
+        id: stage
+        uses: ./.github/actions/stage
+        with:
+          finished: ${{ join(needs.*.outputs.finished) }}
+          from_artifact: true
+          {% endraw -%}{%- if arch == "arm" -%}
+          arm: true
+          {% endif %}{%- raw -%}
+          make_sign_artifact: true
+
+      - name: Sign Helium binaries
+        uses: signpath/github-action-submit-signing-request@v1.1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          artifact-configuration-slug: stage1
+          github-artifact-id: ${{ steps.stage.outputs.artifact_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-for-completion-timeout-in-seconds: 9000
+          service-unavailable-timeout-in-seconds: 9000
+          download-signed-artifact-timeout-in-seconds: 9000
+          output-artifact-directory: signed
+      - name: Copy signed binaries
+        run: Copy-Item -Path "signed\*" -Destination "C:\helium-windows\build\src\out\Default\" -Recurse
+
+      - name: Build Helium installer
+        id: stage2
+        uses: ./.github/actions/stage
+        with:
+          finished: ${{ join(needs.*.outputs.finished) }}
+          {% endraw -%}{%- if arch == "arm" -%}
+          arm: true
+          {% endif %}{%- raw -%}
+          gen_installer: true
+          make_sign_artifact: true
+          from_artifact: false
+
+      - name: Sign Helium installer
+        uses: signpath/github-action-submit-signing-request@v1.1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          artifact-configuration-slug: stage2
+          github-artifact-id: ${{ steps.stage2.outputs.artifact_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-for-completion-timeout-in-seconds: 9000
+          service-unavailable-timeout-in-seconds: 9000
+          download-signed-artifact-timeout-in-seconds: 9000
+          output-artifact-directory: signed
+      - name: Copy signed installer
+        run: Copy-Item -Path "signed\mini_installer.exe" -Destination "C:\helium-windows\build\src\out\Default\"
+
+      - name: Generate user-facing artifacts
+        id: stage3
+        uses: ./.github/actions/stage
+        with:
+          finished: ${{ join(needs.*.outputs.finished) }}
+          {% endraw -%}{%- if arch == "arm" -%}
+          arm: true
+          {% endif %}{%- raw -%}
+          do_package: true
+          from_artifact: false
+
+    outputs:
+      finished: ${{ steps.stage3.outputs.finished }}
+{% endraw -%}
+{% endfor -%}
+{% raw %}
+  publish-release:
+    needs: [build-final, build-arm-final]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: helium-x86_64
+      - name: Download arm package
+        uses: actions/download-artifact@v4
+        with:
+          name: helium-arm64
+      - name: Publish release
+        id: publish
+        uses: softprops/action-gh-release@v1
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            helium*
+    outputs:
+      assets: ${{ steps.publish.outputs.assets }}
+{% endraw -%}
