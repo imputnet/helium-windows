@@ -1,0 +1,3 @@
+generated/app.ico chrome/app/theme/chromium/win/chromium.ico
+generated/document.ico chrome/app/theme/chromium/win/chromium_doc.ico
+generated/document.ico chrome/app/theme/chromium/win/chromium_pdf.ico

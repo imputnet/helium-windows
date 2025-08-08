@@ -1,0 +1,2 @@
+../helium-chromium/resources/branding/app_icon/raw.png generated/app.ico
+../helium-chromium/resources/branding/app_icon/file.png generated/document.ico
