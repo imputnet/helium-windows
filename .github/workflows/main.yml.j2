@@ -15,6 +15,7 @@ jobs:
   {{ prefix }}-{{ n + 1 }}:
 {%- if n %}
     needs: {{ prefix }}-{{ n }}
+    if: needs.{{ prefix }}-{{ n }}.outputs.finished == 'false'
 {%- endif %}
     runs-on: windows-2022
     steps:
@@ -37,12 +38,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished:
-          {%- if n -%}
-            {% raw %} ${{ join(needs.*.outputs.finished) }}{% endraw %}
-          {%- else -%}
-            {{ " false" }}
-          {%- endif %}
           from_artifact: {{ "true" if n else "false" }}
           {%- if arch == "arm" %}
           arm: true
@@ -56,6 +51,7 @@ jobs:
   {{ prefix }}-final:
     needs: {{ prefix }}-15
 {%- raw %}
+    if: ${{ !cancelled() && !failure() }}
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -75,7 +71,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           {% endraw -%}{%- if arch == "arm" -%}
           arm: true
@@ -103,7 +98,6 @@ jobs:
         id: stage2
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           {% endraw -%}{%- if arch == "arm" -%}
           arm: true
           {% endif %}{%- raw -%}
@@ -132,7 +126,6 @@ jobs:
         id: stage3
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           {% endraw -%}{%- if arch == "arm" -%}
           arm: true
           {% endif %}{%- raw -%}

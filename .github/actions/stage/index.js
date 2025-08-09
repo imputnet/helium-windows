@@ -8,25 +8,18 @@ const path = require('path');
 async function run() {
     process.on('SIGINT', function() {
     })
-    const finished = core.getBooleanInput('finished', {required: true});
     const from_artifact = core.getBooleanInput('from_artifact', {required: true});
     const gen_installer = core.getBooleanInput('gen_installer', {required: false});
     const do_package = core.getBooleanInput('do_package', {required: false});
     const make_sign_artifact = core.getBooleanInput('make_sign_artifact', {required: false});
 
     const arm = core.getBooleanInput('arm', {required: false})
-    console.log(`finished: ${finished}, artifact: ${from_artifact}, gen_installer: ${gen_installer}, do_package: ${do_package}`);
+    console.log(`artifact: ${from_artifact}, gen_installer: ${gen_installer}, do_package: ${do_package}`);
 
     const artifact = new DefaultArtifactClient();
     const artifactName = arm ? 'build-artifact-arm64' : 'build-artifact-x86_64';
     const signArtifactName = arm ? 'sign-artifact-arm64' : 'sign-artifact-x86_64';
     const same_runner = gen_installer || do_package;
-
-    if (finished && !gen_installer && !do_package && !make_sign_artifact) {
-        core.setOutput('finished', true);
-        return;
-    }
-
 
     if (from_artifact && !same_runner) {
         const artifactInfo = await artifact.getArtifact(artifactName);

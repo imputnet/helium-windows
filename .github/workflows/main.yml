@@ -33,7 +33,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: false
           from_artifact: false
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -42,6 +41,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-2:
     needs: build-1
+    if: needs.build-1.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -63,7 +63,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -72,6 +71,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-3:
     needs: build-2
+    if: needs.build-2.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -93,7 +93,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -102,6 +101,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-4:
     needs: build-3
+    if: needs.build-3.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -123,7 +123,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -132,6 +131,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-5:
     needs: build-4
+    if: needs.build-4.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -153,7 +153,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -162,6 +161,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-6:
     needs: build-5
+    if: needs.build-5.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -183,7 +183,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -192,6 +191,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-7:
     needs: build-6
+    if: needs.build-6.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -213,7 +213,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -222,6 +221,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-8:
     needs: build-7
+    if: needs.build-7.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -243,7 +243,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -252,6 +251,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-9:
     needs: build-8
+    if: needs.build-8.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -273,7 +273,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -282,6 +281,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-10:
     needs: build-9
+    if: needs.build-9.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -303,7 +303,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -312,6 +311,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-11:
     needs: build-10
+    if: needs.build-10.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -333,7 +333,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -342,6 +341,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-12:
     needs: build-11
+    if: needs.build-11.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -363,7 +363,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -372,6 +371,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-13:
     needs: build-12
+    if: needs.build-12.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -393,7 +393,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -402,6 +401,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-14:
     needs: build-13
+    if: needs.build-13.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -423,7 +423,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -432,6 +431,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-15:
     needs: build-14
+    if: needs.build-14.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -453,7 +453,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
         env:
           SCCACHE_GHA_ENABLED: "true"
@@ -462,6 +461,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-final:
     needs: build-15
+    if: ${{ !cancelled() && !failure() }}
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -481,7 +481,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           make_sign_artifact: true
 
@@ -506,7 +505,6 @@ jobs:
         id: stage2
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           gen_installer: true
           make_sign_artifact: true
           from_artifact: false
@@ -532,7 +530,6 @@ jobs:
         id: stage3
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           do_package: true
           from_artifact: false
 
@@ -561,7 +558,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: false
           from_artifact: false
           arm: true
         env:
@@ -571,6 +567,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-2:
     needs: build-arm-1
+    if: needs.build-arm-1.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -592,7 +589,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -602,6 +598,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-3:
     needs: build-arm-2
+    if: needs.build-arm-2.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -623,7 +620,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -633,6 +629,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-4:
     needs: build-arm-3
+    if: needs.build-arm-3.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -654,7 +651,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -664,6 +660,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-5:
     needs: build-arm-4
+    if: needs.build-arm-4.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -685,7 +682,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -695,6 +691,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-6:
     needs: build-arm-5
+    if: needs.build-arm-5.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -716,7 +713,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -726,6 +722,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-7:
     needs: build-arm-6
+    if: needs.build-arm-6.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -747,7 +744,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -757,6 +753,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-8:
     needs: build-arm-7
+    if: needs.build-arm-7.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -778,7 +775,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -788,6 +784,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-9:
     needs: build-arm-8
+    if: needs.build-arm-8.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -809,7 +806,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -819,6 +815,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-10:
     needs: build-arm-9
+    if: needs.build-arm-9.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -840,7 +837,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -850,6 +846,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-11:
     needs: build-arm-10
+    if: needs.build-arm-10.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -871,7 +868,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -881,6 +877,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-12:
     needs: build-arm-11
+    if: needs.build-arm-11.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -902,7 +899,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -912,6 +908,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-13:
     needs: build-arm-12
+    if: needs.build-arm-12.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -933,7 +930,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -943,6 +939,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-14:
     needs: build-arm-13
+    if: needs.build-arm-13.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -964,7 +961,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -974,6 +970,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-15:
     needs: build-arm-14
+    if: needs.build-arm-14.outputs.finished == 'false'
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -995,7 +992,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
         env:
@@ -1005,6 +1001,7 @@ jobs:
       finished: ${{ steps.stage.outputs.finished }}
   build-arm-final:
     needs: build-arm-15
+    if: ${{ !cancelled() && !failure() }}
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -1024,7 +1021,6 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           from_artifact: true
           arm: true
           make_sign_artifact: true
@@ -1050,7 +1046,6 @@ jobs:
         id: stage2
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           arm: true
           gen_installer: true
           make_sign_artifact: true
@@ -1077,7 +1072,6 @@ jobs:
         id: stage3
         uses: ./.github/actions/stage
         with:
-          finished: ${{ join(needs.*.outputs.finished) }}
           arm: true
           do_package: true
           from_artifact: false
