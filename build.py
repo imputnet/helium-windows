@@ -134,7 +134,7 @@ def main():
               'specified, determine the path from the registry. Default: %(default)s'))
     parser.add_argument(
         '--ci',
-        action='store_true'
+        type=int,
     )
     parser.add_argument('--build-installer', action='store_true')
     parser.add_argument('--do-package', action='store_true')
@@ -375,15 +375,20 @@ def main():
 
     # Run ninja
     if args.ci:
+        max_time = 5.5 * 60 * 60
+        secs_spent = int(time.time()) - args.ci
+        timeout = int(max_time - secs_spent)
+        print(f"{timeout} seconds left for build")
+
         if args.do_package:
             os.chdir(_ROOT_DIR)
             subprocess.run([sys.executable, 'package.py'])
         elif not args.build_installer:
             _run_build_process_timeout('third_party\\ninja\\ninja.exe', '-C', 'out\\Default', 'chrome',
-                                       'chromedriver', 'setup', timeout=3.5*60*60)
+                                       'chromedriver', 'setup', timeout=timeout)
         else:
             _run_build_process_timeout('third_party\\ninja\\ninja.exe', '-C', 'out\\Default',
-                                       'mini_installer', timeout=3.5*60*60)
+                                       'mini_installer', timeout=timeout)
     else:
         _run_build_process('third_party\\ninja\\ninja.exe', '-C', 'out\\Default', 'chrome',
                            'chromedriver', 'mini_installer')
