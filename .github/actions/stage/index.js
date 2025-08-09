@@ -65,6 +65,10 @@ async function run() {
         ignoreReturnCode: true
     });
 
+    if (retCode > 0 && retCode !== 42) {
+        throw `Unexpected return code: ${retCode}`
+    }
+
     core.setOutput('finished', retCode === 0);
 
     if (make_sign_artifact) {

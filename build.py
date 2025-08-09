@@ -100,7 +100,7 @@ def _run_build_process_timeout(*args, timeout):
                 proc.wait(10)
             except:
                 proc.kill()
-            raise KeyboardInterrupt
+            sys.exit(42)
 
 
 def _make_tmp_paths():
