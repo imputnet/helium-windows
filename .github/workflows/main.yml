@@ -477,6 +477,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
@@ -1017,6 +1019,8 @@ jobs:
       - name: Setup Stage
         run: npm install
         working-directory: ./.github/actions/stage
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Run Stage
         id: stage
         uses: ./.github/actions/stage
