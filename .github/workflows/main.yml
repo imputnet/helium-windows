@@ -564,6 +564,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -595,6 +596,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -626,6 +628,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -657,6 +660,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -688,6 +692,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -719,6 +724,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -750,6 +756,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -781,6 +788,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -812,6 +820,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -843,6 +852,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -874,6 +884,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -905,6 +916,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -936,6 +948,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -967,6 +980,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}
@@ -998,6 +1012,7 @@ jobs:
           arm: true
         env:
           SCCACHE_GHA_ENABLED: "true"
+          SCCACHE_GHA_VERSION: "arm"
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: ${{ steps.stage.outputs.finished }}

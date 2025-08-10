@@ -44,6 +44,9 @@ jobs:
           {%- endif %}
         env:
           SCCACHE_GHA_ENABLED: "true"
+          {%- if arch %}
+          SCCACHE_GHA_VERSION: "{{ arch }}"
+          {%- endif %}
           RUSTC_WRAPPER: "sccache"
     outputs:
       finished: {% raw %}${{ steps.stage.outputs.finished }}{% endraw %}
