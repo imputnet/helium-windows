@@ -25,6 +25,8 @@ outputs:
     description: If a previous stage already finished the build, the stage will set all output variables to the input ones and exit
   artifact_id:
     description: id of the build dir artifact
+  version:
+    description: version of the helium release we just built
 
 runs:
   using: 'node16'

@@ -101,6 +101,16 @@ async function run() {
                 await new Promise(r => setTimeout(r, 10000));
             }
         }
+
+        const { exitCode, stdout } = await exec.getExecOutput('python', [
+            'helium-chromium\\utils\\helium_version.py',
+            '--print',
+            '--tree', 'helium-chromium',
+            '--platform-tree', '.'
+        ]);
+
+        if (exitCode !== 0) throw `failed getting version: ${exitCode}`;
+        core.setOutput('version', stdout.trim());
     }
 
     if (!gen_installer && !make_sign_artifact) {

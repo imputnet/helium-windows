@@ -6,10 +6,8 @@
 #
 
 name: Build and release binaries
-on:
-  push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+.[0-9]+'
+on: workflow_dispatch
+
 jobs:
   build-1:
     runs-on: windows-2022
@@ -537,6 +535,7 @@ jobs:
 
     outputs:
       finished: ${{ steps.stage3.outputs.finished }}
+      version: ${{ steps.stage3.outputs.version }}
 
   build-arm-1:
     runs-on: windows-2022
@@ -1097,6 +1096,7 @@ jobs:
 
     outputs:
       finished: ${{ steps.stage3.outputs.finished }}
+      version: ${{ steps.stage3.outputs.version }}
 
   publish-release:
     needs: [build-final, build-arm-final]
@@ -1115,9 +1115,12 @@ jobs:
           name: helium-arm64
       - name: Publish release
         id: publish
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@4634c16e79c963813287e889244c50009e7f0981
         with:
           fail_on_unmatched_files: true
+          prerelease: true
+          name: ${{ needs.build-final.outputs.version }}
+          tag_name: ${{ needs.build-final.outputs.version }}
           files: |
             helium*
     outputs:
