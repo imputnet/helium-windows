@@ -144,6 +144,9 @@ jobs:
 {% raw %}
   publish-release:
     needs: [build-final, build-arm-final]
+    if: ${{ !cancelled() && !failure()
+            && needs.build-final.result == 'success'
+            && needs.build-arm-final.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download package
