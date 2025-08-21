@@ -1,22 +1,31 @@
-# ungoogled-chromium-windows
+# helium-windows
 
-Windows packaging for [ungoogled-chromium](//github.com/Eloston/ungoogled-chromium).
+Windows packaging for [helium-chromium](https://github.com/imputnet/helium-chromium).
 
-## Downloads
+## Credits
 
-[Download binaries from the Contributor Binaries website](//ungoogled-software.github.io/ungoogled-chromium-binaries/).
+This repo is based on
+[ungoogled-chromium-windows](https://github.com/ungoogled-software/ungoogled-chromium-windows),
+but is pretty heavily modified for Helium. Huge shout-out to everyone behind ungoogled-chromium,
+they made working with Chromium infinitely easier.
 
-Or install using `winget install --id=eloston.ungoogled-chromium -e`.
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/)
 
-**Source Code**: It is recommended to use a tag via `git checkout` (see building instructions below). You may also use `master`, but it is for development and may not be stable.
+## Code signing policy
+
+Committers, reviewers and approvers: [@imputnet](https://github.com/orgs/imputnet/people)
+
+## License
+All code, patches, modified portions of imported code or patches, and
+any other content that is unique to Helium and not imported from other
+repositories is licensed under GPL-3.0. See [LICENSE](LICENSE).
+
+Any content imported from other projects retains its original license (for
+example, any original unmodified code imported from ungoogled-chromium remains
+licensed under their [BSD 3-Clause license](LICENSE.ungoogled_chromium)).
 
 ## Building
-
-Google only supports [Windows 10 x64 or newer](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/windows_build_instructions.md#system-requirements). These instructions are tested on Windows 10 Pro x64.
-
-### Setting up the build environment
-
-**IMPORTANT**: Please setup only what is referenced below. Do NOT setup other Chromium compilation tools like `depot_tools`, since we have a custom build process which avoids using Google's pre-built binaries.
 
 #### Setting up Visual Studio
 
@@ -28,10 +37,13 @@ Google only supports [Windows 10 x64 or newer](https://chromium.googlesource.com
 	* `WINDOWSSDKDIR = DRIVE:\path\to\Windows Kits\10`
 	* `GYP_MSVS_VERSION = 2019` (replace 2019 with your installed version's year)
 
-
 #### Other build requirements
 
-**IMPORTANT**: Currently, the `MAX_PATH` path length restriction (which is 260 characters by default) must be lifted in for our Python build scripts. This can be lifted in Windows 10 (v1607 or newer) with the official installer for Python 3.6 or newer (you will see a button at the end of installation to do this). See [Issue #345](https://github.com/Eloston/ungoogled-chromium/issues/345) for other methods for older Windows versions.
+**IMPORTANT**: Currently, the `MAX_PATH` path length restriction (which is 260 characters by default)
+must be lifted in for our Python build scripts. This can be lifted in Windows 10 (v1607 or newer) with
+the official installer for Python 3.6 or newer (you will see a button at the end of installation to do
+this). See [Issue #345](https://github.com/ungoogled-software/ungoogled-chromium/issues/345) for other
+methods for older Windows versions.
 
 1. Setup the following:
     * 7-Zip
@@ -52,8 +64,8 @@ Google only supports [Windows 10 x64 or newer](https://chromium.googlesource.com
 Run in `Developer Command Prompt for VS` (as administrator):
 
 ```cmd
-git clone --recurse-submodules https://github.com/ungoogled-software/ungoogled-chromium-windows.git
-cd ungoogled-chromium-windows
+git clone --recurse-submodules https://github.com/imputnet/helium-windows.git
+cd helium-windows
 # Replace TAG_OR_BRANCH_HERE with a tag or branch name
 git checkout --recurse-submodules TAG_OR_BRANCH_HERE
 python3 build.py
@@ -86,18 +98,18 @@ ln -s /usr/bin/vim /usr/bin/vi
 
 1. Start `Developer Command Prompt for VS` and `MSYS2 MSYS` shell and navigate to source folder
 	1. `Developer Command Prompt for VS`
-		* `cd c:\path\to\repo\ungoogled-chromium-windows`
+		* `cd c:\path\to\repo\helium-windows`
 	1. `MSYS2 MSYS`
-		* `cd /path/to/repo/ungoogled-chromium-windows`
+		* `cd /path/to/repo/helium-windows`
 		* You can use Git Bash to determine the path to this repo
 		* Or, you can find it yourself via `/<drive letter>/<path with forward slashes>`
 1. Clone sources
 	**`Developer Command Prompt for VS`**
-	* `python3 ungoogled-chromium\utils\clone.py -o build\src`
+	* `python3 helium-chromium\utils\clone.py -o build\src`
 1. Check for rust version change (see below)
 1. Update pruning list
 	**`Developer Command Prompt for VS`**
-	* `python3 ungoogled-chromium\devutils\update_lists.py -t build\src --domain-regex ungoogled-chromium\domain_regex.list`
+	* `python3 helium-chromium\devutils\update_lists.py -t build\src --domain-regex helium-chromium\domain_regex.list`
 1. Update patches
 	**`MSYS2 MSYS`**
 	1. Setup patches and shell to update patches
@@ -105,10 +117,10 @@ ln -s /usr/bin/vim /usr/bin/vi
 		* `source devutils/set_quilt_vars.sh`
 	1. Go into the source tree
 		* `cd build/src`
-	1. Use quilt to refresh patches. See ungoogled-chromium's [docs/developing.md](https://github.com/Eloston/ungoogled-chromium/blob/master/docs/developing.md#updating-patches) section "Updating patches" for more details
+	1. Use quilt to refresh patches. See ungoogled-chromium's [docs/developing.md](https://github.com/ungoogled-software/ungoogled-chromium/blob/master/docs/developing.md#updating-patches) section "Updating patches" for more details
 	1. Go back to repo root
 		* `cd ../..`
-	1. Remove all patches introduced by ungoogled-chromium
+	1. Remove all patches introduced by helium-chromium
 		* `./devutils/update_patches.sh unmerge`
 	1. Sanity checking for consistency in series file
 		* `./devutils/check_patch_files.sh`
@@ -129,7 +141,7 @@ ln -s /usr/bin/vim /usr/bin/vi
 1. Check the [Git GitHub](https://github.com/git-for-windows/git/releases/) for the latest version of Git.
 	1. Get the SHA-256 checksum for `PortableGit-<version>-64-bit.7z.exe`.
 1. Check for commit hash changes of `src` submodule in `third_party/microsoft_dxheaders` (e.g. using GitHub `https://github.com/chromium/chromium/tree/<version>/third_party/microsoft_dxheaders`).
-	1. Replace `version` with the Chromium version in `ungoogled-chromium/chromium_version.txt`.
+	1. Replace `version` with the Chromium version in `helium-chromium/chromium_version.txt`.
 1. Check the node version changes in `third_party/node/update_node_binaries` (e.g. using GitHub `https://github.com/chromium/chromium/tree/<version>/third_party/node/update_node_binaries`).
 	1. Download the "Standalone Binary" version from the [NodeJS website](https://nodejs.org/en/download).
 	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
@@ -157,6 +169,4 @@ ln -s /usr/bin/vim /usr/bin/vi
 1. Download nightly rust build from: `https://static.rust-lang.org/dist/<build-date>/rust-nightly-aarch64-pc-windows-msvc.tar.gz`
 	1. Replace `build-date` with the obtained value
 	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
-## License
 
-See [LICENSE](LICENSE)
