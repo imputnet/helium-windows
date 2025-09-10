@@ -51,7 +51,7 @@ async function run() {
         args.push('--do-package')
     }
 
-    await exec.exec('python', ['-m', 'pip', 'install', 'httplib2', 'Pillow'], {
+    await exec.exec('python', ['-m', 'pip', 'install', 'httplib2==0.22.0', 'Pillow'], {
         cwd: 'C:\\helium-windows',
         ignoreReturnCode: true
     });
