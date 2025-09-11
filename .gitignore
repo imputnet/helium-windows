@@ -1,3 +1,5 @@
 /build
 /.gcs_entries
 __pycache__
+.DS_Store
+.tm_properties
