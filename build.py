@@ -171,7 +171,7 @@ def main():
         # Prepare source folder
         if args.tarball:
             # Download chromium tarball
-            get_logger().info('Downloading chromium tarball...')
+            get_logger().info('Downloading chromium tarball and other resources...')
             download_info = downloads.DownloadInfo([_ROOT_DIR / 'helium-chromium' / 'downloads.ini'])
             downloads.retrieve_downloads(download_info, downloads_cache, None, True, args.disable_ssl_verification)
             try:
@@ -181,7 +181,7 @@ def main():
                 exit(1)
 
             # Unpack chromium tarball
-            get_logger().info('Unpacking chromium tarball...')
+            get_logger().info('Unpacking chromium tarball and other resources...')
             downloads.unpack_downloads(download_info, downloads_cache, None, source_tree, extractors)
         else:
             # Clone sources
@@ -196,19 +196,6 @@ def main():
         except downloads.HashMismatchError as exc:
             get_logger().error('File checksum does not match: %s', exc)
             exit(1)
-
-        # Retrieve extras
-        get_logger().info('Downloading generic extras...')
-        extras_info = downloads.DownloadInfo([_ROOT_DIR / 'helium-chromium' / 'extras.ini'])
-        downloads.retrieve_downloads(extras_info, downloads_cache, None, True, args.disable_ssl_verification)
-        try:
-            downloads.check_downloads(extras_info, downloads_cache, None)
-        except downloads.HashMismatchError as exc:
-            get_logger().error('File checksum does not match: %s', exc)
-            exit(1)
-        get_logger().info('Unpacking generic extras...')
-        downloads.unpack_downloads(extras_info, downloads_cache, None, source_tree, extractors)
-
 
         # Prune binaries
         pruning_list = _ROOT_DIR / 'helium-chromium' / 'pruning.list'
