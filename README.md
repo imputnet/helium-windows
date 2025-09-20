@@ -9,10 +9,10 @@ This repo is based on
 but is pretty heavily modified for Helium. Huge shout-out to everyone behind ungoogled-chromium,
 they made working with Chromium infinitely easier.
 
+## Code signing policy
+
 Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
 [SignPath Foundation](https://signpath.org/)
-
-## Code signing policy
 
 Committers, reviewers and approvers: [@imputnet](https://github.com/orgs/imputnet/people)
 
