@@ -4,7 +4,13 @@
 #
 
 name: Build and release binaries
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        required: false
+        description: 'Runner image name'
+        default: 'windows-2022'
 
 jobs:
 {%- for arch in ["", "arm"] %}
@@ -15,7 +21,7 @@ jobs:
     needs: {{ prefix }}-{{ n }}
     if: needs.{{ prefix }}-{{ n }}.outputs.finished == 'false'
 {%- endif %}
-    runs-on: windows-2022
+    runs-on: {% raw %}${{ github.event.inputs.runner }}{% endraw %}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -53,7 +59,7 @@ jobs:
     needs: {{ prefix }}-15
 {%- raw %}
     if: ${{ !cancelled() && !failure() }}
-    runs-on: windows-2022
+    runs-on: ${{ github.event.inputs.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
