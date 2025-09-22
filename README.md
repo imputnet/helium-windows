@@ -1,6 +1,6 @@
 # helium-windows
 
-Windows packaging for [helium-chromium](https://github.com/imputnet/helium-chromium).
+Windows packaging for [Helium](https://github.com/imputnet/helium).
 
 ## Credits
 

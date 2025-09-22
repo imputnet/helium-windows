@@ -1,3 +1,3 @@
 [submodule "helium-chromium"]
 	path = helium-chromium
-	url = https://github.com/imputnet/helium-chromium.git
+	url = https://github.com/imputnet/helium.git
