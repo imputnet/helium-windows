@@ -17,4 +17,4 @@ jobs:
       - name: Run bump-platform action from helium-chromium
         uses: imputnet/helium-chromium/.github/actions/bump-platform@main
         with:
-          token: ${{ github.token }}
+          token: ${{ secrets.GHPAT }}
