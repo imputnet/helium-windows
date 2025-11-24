@@ -2,6 +2,14 @@
 
 Windows packaging for [Helium](https://github.com/imputnet/helium).
 
+## Installation
+
+Grab the `.exe` package from the Releases page.
+You can find it under the published [builds](https://github.com/imputnet/helium-windows/releases) for your architecture.
+
+Helium can also be installed via winget:
+ `wiget install ImputNet.Helium`
+
 ## Credits
 
 This repo is based on
