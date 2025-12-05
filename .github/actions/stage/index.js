@@ -31,7 +31,7 @@ async function run() {
         await io.rmRF('C:\\helium-windows\\build\\artifacts.zip');
     }
 
-    const args = ['build.py', '--ci', String(started_at)]
+    const args = ['build.py', '--ci', String(started_at), '-j', '2']
     if (arm)
         args.push('--arm')
 
