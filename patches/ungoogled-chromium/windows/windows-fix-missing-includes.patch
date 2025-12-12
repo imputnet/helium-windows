@@ -1,7 +1,7 @@
 --- a/components/contextual_tasks/internal/BUILD.gn
 +++ b/components/contextual_tasks/internal/BUILD.gn
-@@ -45,6 +45,7 @@ source_set("internal") {
-     "//net",
+@@ -46,6 +46,7 @@ source_set("internal") {
+     "//third_party/re2",
      "//ui/gfx",
      "//url",
 +    "//third_party/re2",
