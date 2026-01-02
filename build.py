@@ -202,17 +202,17 @@ def main():
             get_logger().error('File checksum does not match: %s', exc)
             exit(1)
 
-        # Retrieve extras
-        get_logger().info('Downloading generic extras...')
-        extras_info = downloads.DownloadInfo([_ROOT_DIR / 'helium-chromium' / 'extras.ini'])
-        downloads.retrieve_downloads(extras_info, downloads_cache, None, True, args.disable_ssl_verification)
+        # Retrieve deps
+        get_logger().info('Downloading deps...')
+        deps_info = downloads.DownloadInfo([_ROOT_DIR / 'helium-chromium' / 'deps.ini'])
+        downloads.retrieve_downloads(deps_info, downloads_cache, None, True, args.disable_ssl_verification)
         try:
-            downloads.check_downloads(extras_info, downloads_cache, None)
+            downloads.check_downloads(deps_info, downloads_cache, None)
         except downloads.HashMismatchError as exc:
             get_logger().error('File checksum does not match: %s', exc)
             exit(1)
-        get_logger().info('Unpacking generic extras...')
-        downloads.unpack_downloads(extras_info, downloads_cache, None, source_tree, extractors)
+        get_logger().info('Unpacking deps...')
+        downloads.unpack_downloads(deps_info, downloads_cache, None, source_tree, extractors)
 
 
         # Prune binaries
