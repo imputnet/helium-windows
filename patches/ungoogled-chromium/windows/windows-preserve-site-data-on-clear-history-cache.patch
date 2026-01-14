@@ -1,0 +1,30 @@
+# Preserve site data unless explicitly requested in the Clear Browsing Data dialog.
+
+--- a/chrome/browser/ui/webui/settings/clear_browsing_data_handler.cc
++++ b/chrome/browser/ui/webui/settings/clear_browsing_data_handler.cc
+@@ -201,6 +201,7 @@ void ClearBrowsingDataHandler::HandleClearBrowsingData(
+ 
+   int remove_mask = 0;
+   int origin_type_mask = 0;
++  bool clear_site_data = false;
+ 
+   for (const auto& data_type : data_type_set) {
+     const std::string& data_type_as_string = data_type.GetString();
+@@ -224,7 +225,9 @@ void ClearBrowsingDataHandler::HandleClearBrowsingData(
+       remove_mask |= browsing_data::BrowsingDataRemover::DATA_TYPE_DOWNLOADS;
+     } else if (data_type_as_string == browsing_data::prefs::kDeleteCookies) {
+       remove_mask |= browsing_data::BrowsingDataRemover::DATA_TYPE_SITE_DATA;
++      clear_site_data = true;
+     } else if (data_type_as_string ==
+                browsing_data::prefs::kDeletePasswords) {
+       remove_mask |= browsing_data::BrowsingDataRemover::DATA_TYPE_PASSWORDS;
+@@ -252,6 +255,10 @@ void ClearBrowsingDataHandler::HandleClearBrowsingData(
+     origin_type_mask |= BrowsingDataRemover::ORIGIN_TYPE_UNPROTECTED_WEB;
+   }
+ 
++  if (!clear_site_data) {
++    remove_mask &= ~browsing_data::BrowsingDataRemover::DATA_TYPE_SITE_DATA;
++  }
++
+   RemoveBrowsingData(base::Time::Now() - time_period, base::Time::Now(),
+                      remove_mask, origin_type_mask);
