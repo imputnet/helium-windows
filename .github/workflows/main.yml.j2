@@ -150,6 +150,11 @@ jobs:
             && needs.build-arm-final.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+          fetch-tags: true
       - name: Download package
         uses: actions/download-artifact@v4
         with:
@@ -158,11 +163,31 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: helium-arm64
+      - name: Create release notes
+        shell: bash
+        run: |
+          GH_RUN_HREF="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          submodule_commit_at() {
+              git ls-tree "$1" helium-chromium | awk '{print $3}'
+          }
+          LAST_TAG=$(git describe --tags --abbrev=0)
+          COMMIT_THEN=$(submodule_commit_at "$COMMIT_THEN")
+          COMMIT_NOW=$(submodule_commit_at HEAD)
+          {
+            printf 'Changes since last build:\n### helium-windows\n```\n'
+            git log --oneline "$LAST_TAG..HEAD"
+            printf '```\n\n### helium-chromium\n```\n'
+            git -C helium-chromium log --oneline "$COMMIT_THEN..$COMMIT_NOW"
+            printf '```\n\n---\n\n'
+            printf 'See [this GitHub Actions Run](%s) for the [Workflow file](%s/workflow) used '
+            printf 'as well as the build logs and artifacts\n' "$GH_RUN_HREF" "$GH_RUN_HREF" 
+          } | tee ./github_release_note.md
       - name: Publish release
         id: publish
         uses: imputnet/action-gh-release@v2.5
         with:
           fail_on_unmatched_files: true
+          body_path: ./github_release_note.md
           prerelease: true
           name: ${{ needs.build-final.outputs.version }}
           tag_name: ${{ needs.build-final.outputs.version }}
