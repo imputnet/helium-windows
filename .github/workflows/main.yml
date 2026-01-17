@@ -1124,7 +1124,7 @@ jobs:
               git ls-tree "$1" helium-chromium | awk '{print $3}'
           }
           LAST_TAG=$(git describe --tags --abbrev=0)
-          COMMIT_THEN=$(submodule_commit_at "$COMMIT_THEN")
+          COMMIT_THEN=$(submodule_commit_at "$LAST_TAG")
           COMMIT_NOW=$(submodule_commit_at HEAD)
           {
             printf 'Changes since last build:\n### helium-windows\n```\n'
