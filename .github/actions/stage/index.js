@@ -93,7 +93,7 @@ async function run() {
             }
             try {
                 await artifact.uploadArtifact(finalArtifactName, packageList,
-                    'C:\\helium-windows\\build', { compressionLevel: 0 });
+                    'C:\\helium-windows\\build', { retentionDays: 4, compressionLevel: 0 });
                 break;
             } catch (e) {
                 console.error(`Upload artifact failed: ${e}`);
@@ -124,7 +124,7 @@ async function run() {
             }
             try {
                 await artifact.uploadArtifact(artifactName, ['C:\\helium-windows\\artifacts.zip'],
-                    'C:\\helium-windows', { compressionLevel: 0 });
+                    'C:\\helium-windows', { retentionDays: 4, compressionLevel: 0 });
                 break;
             } catch (e) {
                 console.error(`Upload artifact failed: ${e}`);
