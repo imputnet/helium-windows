@@ -13,14 +13,12 @@ async function run() {
     const from_artifact = core.getBooleanInput('from_artifact', {required: true});
     const gen_installer = core.getBooleanInput('gen_installer', {required: false});
     const do_package = core.getBooleanInput('do_package', {required: false});
-    const make_sign_artifact = core.getBooleanInput('make_sign_artifact', {required: false});
 
     const arm = core.getBooleanInput('arm', {required: false})
     console.log(`artifact: ${from_artifact}, gen_installer: ${gen_installer}, do_package: ${do_package}`);
 
     const artifact = new DefaultArtifactClient();
     const artifactName = arm ? 'build-artifact-arm64' : 'build-artifact-x86_64';
-    const signArtifactName = arm ? 'sign-artifact-arm64' : 'sign-artifact-x86_64';
     const same_runner = gen_installer || do_package;
 
     if (from_artifact && !same_runner) {
@@ -66,20 +64,6 @@ async function run() {
 
     core.setOutput('finished', retCode === 0);
 
-    if (make_sign_artifact) {
-        if (retCode !== 0) throw "build was unsuccessful";
-
-        const patterns = ['chrome*.exe', 'notification_helper.exe', 'setup.exe', 'mini_installer.exe', '*.dll'];
-
-        const prefix = 'C:\\helium-windows\\build\\src\\out\\Default';
-        const globber = await glob.create(patterns.map(pattern => path.join(prefix, pattern)).join('\n'));
-
-        const binaries = await globber.glob();
-        try { await artifact.deleteArtifact(signArtifactName); } catch {}
-        const { id } = await artifact.uploadArtifact(signArtifactName, binaries, prefix, { compressionLevel: 0 });
-        core.setOutput('artifact_id', id);
-    }
-
     if (do_package) {
         const globber = await glob.create('C:\\helium-windows\\build\\helium*',
             {matchDirectories: false});
@@ -113,7 +97,7 @@ async function run() {
         core.setOutput('version', stdout.trim());
     }
 
-    if (!gen_installer && !make_sign_artifact) {
+    if (!gen_installer) {
         await exec.exec('7z', ['a', '-tzip', 'C:\\helium-windows\\artifacts.zip',
             'C:\\helium-windows\\build\\src', '-mx=3', '-mtc=on'], {ignoreReturnCode: true});
         for (let i = 0; i < 5; ++i) {
