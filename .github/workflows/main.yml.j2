@@ -70,26 +70,23 @@ jobs:
         id: stage
         uses: ./.github/actions/stage
         with:
-          from_artifact: true
           {% endraw -%}{%- if arch == "arm" -%}
           arm: true
           {% endif %}{%- raw -%}
-          make_sign_artifact: true
+          from_artifact: true
 
       - name: Sign Helium binaries
-        uses: signpath/github-action-submit-signing-request@v1.1
+        uses: azure/artifact-signing-action@v1
         with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
-          artifact-configuration-slug: stage1
-          github-artifact-id: ${{ steps.stage.outputs.artifact_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-for-completion-timeout-in-seconds: 90000
-          output-artifact-directory: signed
-      - name: Copy signed binaries
-        run: Copy-Item -Path "signed\*" -Destination "C:\helium-windows\build\src\out\Default\" -Recurse
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
+          files: ${{ steps.stage.outputs.files-to-sign }}
+          description: Helium
+          description-url: https://github.com/imputnet/helium-windows
 
       - name: Build Helium installer
         id: stage2
@@ -99,23 +96,20 @@ jobs:
           arm: true
           {% endif %}{%- raw -%}
           gen_installer: true
-          make_sign_artifact: true
           from_artifact: false
 
       - name: Sign Helium installer
-        uses: signpath/github-action-submit-signing-request@v1.1
+        uses: azure/artifact-signing-action@v1
         with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
-          artifact-configuration-slug: stage2
-          github-artifact-id: ${{ steps.stage2.outputs.artifact_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-for-completion-timeout-in-seconds: 90000
-          output-artifact-directory: signed
-      - name: Copy signed installer
-        run: Copy-Item -Path "signed\mini_installer.exe" -Destination "C:\helium-windows\build\src\out\Default\"
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
+          files: C:\helium-windows\build\src\out\Default\mini_installer.exe
+          description: Helium Installer
+          description-url: https://github.com/imputnet/helium-windows
 
       - name: Generate user-facing artifacts
         id: stage3

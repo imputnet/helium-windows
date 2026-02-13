@@ -9,12 +9,9 @@ This repo is based on
 but is pretty heavily modified for Helium. Huge shout-out to everyone behind ungoogled-chromium,
 they made working with Chromium infinitely easier.
 
-## Code signing policy
-
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
-[SignPath Foundation](https://signpath.org/)
-
-Committers, reviewers and approvers: [@imputnet](https://github.com/orgs/imputnet/people)
+A huge thank you to [Depot](https://depot.dev/) for sponsoring our runners, which handle the Windows
+builds of Helium. Their high-performance infrastructure lets us compile and package Helium at least
+8 times faster than with GitHub-hosted runners, allowing us to release new builds within hours, not days.
 
 ## License
 All code, patches, modified portions of imported code or patches, and

@@ -3,7 +3,33 @@ const io = require('@actions/io');
 const exec = require('@actions/exec');
 const {DefaultArtifactClient} = require('@actions/artifact');
 const glob = require('@actions/glob');
+
 const path = require('path');
+const fs = require('fs/promises');
+const { existsSync } = require('fs');
+
+async function getFilesToSign() {
+    const ROOT = 'C:\\helium-windows\\build\\src';
+    const OUT_PATH = path.join(ROOT, 'out\\Default');
+    const MANIFEST_PATH =
+        path.join(ROOT, 'infra\\archive_config\\win-archive-rel.json');
+
+    const { archive_datas } =
+        JSON.parse(await fs.readFile(MANIFEST_PATH, 'utf8'));
+
+    const fileNames = [...new Set(
+        archive_datas.map(archive =>
+            (archive.files || []).filter(
+                file => file.endsWith('.exe') || file.endsWith('.dll')
+            )
+        ).flat(1)
+    )];
+
+    return fileNames.map(fileName => {
+        const absPath = path.join(OUT_PATH, fileName);
+        return existsSync(absPath) ? absPath : null;
+    }).filter(path => path);
+}
 
 async function run() {
     const started_at = Math.floor(new Date() / 1000);
@@ -13,14 +39,12 @@ async function run() {
     const from_artifact = core.getBooleanInput('from_artifact', {required: true});
     const gen_installer = core.getBooleanInput('gen_installer', {required: false});
     const do_package = core.getBooleanInput('do_package', {required: false});
-    const make_sign_artifact = core.getBooleanInput('make_sign_artifact', {required: false});
 
     const arm = core.getBooleanInput('arm', {required: false})
     console.log(`artifact: ${from_artifact}, gen_installer: ${gen_installer}, do_package: ${do_package}`);
 
     const artifact = new DefaultArtifactClient();
     const artifactName = arm ? 'build-artifact-arm64' : 'build-artifact-x86_64';
-    const signArtifactName = arm ? 'sign-artifact-arm64' : 'sign-artifact-x86_64';
     const same_runner = gen_installer || do_package;
 
     if (from_artifact && !same_runner) {
@@ -31,7 +55,10 @@ async function run() {
         await io.rmRF('C:\\helium-windows\\build\\artifacts.zip');
     }
 
-    const args = ['build.py', '--ci', String(started_at), '-j', '2']
+    const args = ['build.py', '--ci', String(started_at)]
+    if (process.env.RUNNER_ENVIRONMENT === 'github-hosted')
+        args.push('-j', '2');
+
     if (arm)
         args.push('--arm')
 
@@ -66,19 +93,12 @@ async function run() {
 
     core.setOutput('finished', retCode === 0);
 
-    if (make_sign_artifact) {
-        if (retCode !== 0) throw "build was unsuccessful";
-
-        const patterns = ['chrome*.exe', 'notification_helper.exe', 'setup.exe', 'mini_installer.exe', '*.dll'];
-
-        const prefix = 'C:\\helium-windows\\build\\src\\out\\Default';
-        const globber = await glob.create(patterns.map(pattern => path.join(prefix, pattern)).join('\n'));
-
-        const binaries = await globber.glob();
-        try { await artifact.deleteArtifact(signArtifactName); } catch {}
-        const { id } = await artifact.uploadArtifact(signArtifactName, binaries, prefix, { compressionLevel: 0 });
-        core.setOutput('artifact_id', id);
+    let paths = [];
+    if (retCode === 0) {
+        paths = await getFilesToSign();
+        console.log('Files to sign:', paths);
     }
+    core.setOutput('files-to-sign', paths.join(','));
 
     if (do_package) {
         const globber = await glob.create('C:\\helium-windows\\build\\helium*',
@@ -113,7 +133,7 @@ async function run() {
         core.setOutput('version', stdout.trim());
     }
 
-    if (!gen_installer && !make_sign_artifact) {
+    if (!gen_installer) {
         await exec.exec('7z', ['a', '-tzip', 'C:\\helium-windows\\artifacts.zip',
             'C:\\helium-windows\\build\\src', '-mx=3', '-mtc=on'], {ignoreReturnCode: true});
         for (let i = 0; i < 5; ++i) {
