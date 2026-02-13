@@ -3,7 +3,33 @@ const io = require('@actions/io');
 const exec = require('@actions/exec');
 const {DefaultArtifactClient} = require('@actions/artifact');
 const glob = require('@actions/glob');
+
 const path = require('path');
+const fs = require('fs/promises');
+const { existsSync } = require('fs');
+
+async function getFilesToSign() {
+    const ROOT = 'C:\\helium-windows\\build\\src';
+    const OUT_PATH = path.join(ROOT, 'out\\Default');
+    const MANIFEST_PATH =
+        path.join(ROOT, 'infra\\archive_config\\win-archive-rel.json');
+
+    const { archive_datas } =
+        JSON.parse(await fs.readFile(MANIFEST_PATH, 'utf8'));
+
+    const fileNames = [...new Set(
+        archive_datas.map(archive =>
+            (archive.files || []).filter(
+                file => file.endsWith('.exe') || file.endsWith('.dll')
+            )
+        ).flat(1)
+    )];
+
+    return fileNames.map(fileName => {
+        const absPath = path.join(OUT_PATH, fileName);
+        return existsSync(absPath) ? absPath : null;
+    }).filter(path => path);
+}
 
 async function run() {
     const started_at = Math.floor(new Date() / 1000);
@@ -66,6 +92,13 @@ async function run() {
     }
 
     core.setOutput('finished', retCode === 0);
+
+    let paths = [];
+    if (retCode === 0) {
+        paths = await getFilesToSign();
+        console.log('Files to sign:', paths);
+    }
+    core.setOutput('files-to-sign', paths.join(','));
 
     if (do_package) {
         const globber = await glob.create('C:\\helium-windows\\build\\helium*',

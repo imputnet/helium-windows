@@ -421,8 +421,7 @@ jobs:
           endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
           signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
           certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
-          files-folder: C:\helium-windows\build\src\out\Default
-          files-folder-filter: exe,dll
+          files: ${{ steps.stage.outputs.files-to-sign }}
           description: Helium
           description-url: https://github.com/imputnet/helium-windows
 
@@ -879,8 +878,7 @@ jobs:
           endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
           signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
           certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
-          files-folder: C:\helium-windows\build\src\out\Default
-          files-folder-filter: exe,dll
+          files: ${{ steps.stage.outputs.files-to-sign }}
           description: Helium
           description-url: https://github.com/imputnet/helium-windows
 

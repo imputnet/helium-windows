@@ -23,6 +23,8 @@ outputs:
     description: id of the build dir artifact
   version:
     description: version of the helium release we just built
+  files-to-sign:
+    description: Array of absolute path to files that should be signed
 
 runs:
   using: 'node16'
