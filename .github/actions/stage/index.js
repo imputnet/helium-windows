@@ -29,7 +29,10 @@ async function run() {
         await io.rmRF('C:\\helium-windows\\build\\artifacts.zip');
     }
 
-    const args = ['build.py', '--ci', String(started_at), '-j', '2']
+    const args = ['build.py', '--ci', String(started_at)]
+    if (process.env.RUNNER_ENVIRONMENT === 'github-hosted')
+        args.push('-j', '2');
+
     if (arm)
         args.push('--arm')
 
