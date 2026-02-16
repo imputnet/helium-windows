@@ -264,7 +264,8 @@ def main():
             # Substitute names
             asyncio.run(name_substitution.do_substitution(
                 source_tree,
-                None,
+                tarpath=None,
+                workers=os.cpu_count()
             ))
         else:
             print("Apply patches using quilt, then press Enter")
