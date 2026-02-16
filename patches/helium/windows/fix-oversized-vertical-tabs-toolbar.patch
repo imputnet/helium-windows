@@ -1,0 +1,13 @@
+--- a/chrome/browser/ui/views/frame/browser_frame_view_win.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_win.cc
+@@ -692,6 +692,10 @@ int BrowserFrameViewWin::TitlebarHeight(
+ }
+ 
+ int BrowserFrameViewWin::GetFrameHeight() const {
++  if (GetBrowserView()->ShouldDrawVerticalTabStrip()) {
++    return GetBrowserView()->toolbar()->GetPreferredSize().height();
++  }
++
+   if (GetBrowserView()->GetTabStripVisible()) {
+     // TODO(crbug.com/437915973): Account for the vertical tab region when using
+     // GetMinimumSize().
