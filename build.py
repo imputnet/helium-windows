@@ -262,11 +262,11 @@ def main():
             )
 
             # Substitute names
-            asyncio.run(name_substitution.do_substitution(
+            name_substitution.do_substitution(
                 source_tree,
                 tarpath=None,
                 workers=min(32, os.cpu_count())
-            ))
+            )
         else:
             print("Apply patches using quilt, then press Enter")
             input()
