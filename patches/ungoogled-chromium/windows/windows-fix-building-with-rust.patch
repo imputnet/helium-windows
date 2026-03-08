@@ -1,6 +1,6 @@
 --- a/build/config/clang/BUILD.gn
 +++ b/build/config/clang/BUILD.gn
-@@ -257,8 +257,6 @@ clang_lib("compiler_builtins") {
+@@ -261,8 +261,6 @@ clang_lib("compiler_builtins") {
      } else {
        assert(false, "unsupported target_platform=$target_platform")
      }
@@ -29,11 +29,11 @@
  
    # Whether artifacts produced by the Rust compiler can participate in ThinLTO.
    #
-@@ -121,7 +121,7 @@ use_chromium_rust_toolchain = rust_sysro
+@@ -140,7 +140,7 @@ use_chromium_rust_toolchain = rust_sysro
  # `rustc_nightly_capability = false` will make the build avoid the use of
  # Rust nightly features. There are no bots that test this and there is no
  # guarantee it will work, but we accept patches for this configuration.
--rustc_nightly_capability = use_chromium_rust_toolchain
+-rustc_nightly_capability = use_chromium_rust_toolchain || build_with_chromium
 +rustc_nightly_capability = true
  
  # Platform support for the Rust toolchain.
