@@ -93,7 +93,7 @@ jobs:
           description: Helium
           description-url: https://github.com/imputnet/helium-windows
 
-      - name: Build Helium installer
+      - name: Build Helium installer and package
         id: stage2
         uses: ./.github/actions/stage
         with:
@@ -112,18 +112,18 @@ jobs:
           endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
           signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
           certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
-          files: C:\helium-windows\build\src\out\Default\mini_installer.exe
+          files: C:\helium-windows\build\helium*-installer.exe
           description: Helium Installer
           description-url: https://github.com/imputnet/helium-windows
 
-      - name: Generate user-facing artifacts
+      - name: Upload artifacts
         id: stage3
         uses: ./.github/actions/stage
         with:
           {% endraw -%}{%- if arch == "arm" -%}
           arm: true
           {% endif %}{%- raw -%}
-          do_package: true
+          upload_final: true
           from_artifact: false
 
     outputs:

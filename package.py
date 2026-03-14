@@ -21,6 +21,7 @@ import os
 import platform
 from pathlib import Path
 import shutil
+import subprocess
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'helium-chromium' / 'utils'))
 import helium_version
@@ -29,6 +30,8 @@ from _common import ENCODING, get_chromium_version
 sys.path.pop(0)
 
 _ROOT_DIR = Path(__file__).resolve().parent
+_BUILD_SRC = _ROOT_DIR / 'build' / 'src'
+_ICON_PATH = _BUILD_SRC / 'chrome' / 'app' / 'theme' / 'chromium' / 'win' / 'chromium.ico'
 
 _cached_target_cpu = None
 
@@ -43,6 +46,22 @@ def _get_target_cpu(build_outputs):
                     break
     assert _cached_target_cpu
     return _cached_target_cpu
+
+def _build_nsis_installer(version, arch, build_outputs, output_file):
+    cmd = [
+        str(_BUILD_SRC / 'third_party' / 'nsis' / 'makensis.exe'),
+        '-NOCD',
+        f'-DVERSION={version}',
+        f'-DARCH={arch}',
+        f'-DSETUP_EXE={build_outputs / "setup.exe"}',
+        f'-DCHROME_7Z={build_outputs / "chrome.7z"}',
+        f'-DICON_FILE={_ICON_PATH}',
+        f'-DOUTPUT_FILE={output_file}',
+        f'-DLICENSE_FILE={_ROOT_DIR / "LICENSE"}',
+        str(_ROOT_DIR / 'installer' / 'helium.nsi'),
+    ]
+    subprocess.run(cmd, check=True)
+
 
 def main():
     """Entrypoint"""
@@ -64,9 +83,10 @@ def main():
     version = f"{version_parts['HELIUM_MAJOR']}.{version_parts['HELIUM_MINOR']}." + \
               f"{version_parts['HELIUM_PATCH']}.{version_parts['HELIUM_PLATFORM']}"
 
-    shutil.copyfile('build/src/out/Default/mini_installer.exe',
-        'build/helium_{}_{}-installer.exe'.format(
-            version, _get_target_cpu(build_outputs)))
+    target_cpu = _get_target_cpu(build_outputs)
+
+    installer_output = _ROOT_DIR / 'build' / f'helium_{version}_{target_cpu}-installer.exe'
+    _build_nsis_installer(version, target_cpu, build_outputs, installer_output)
 
     timestamp = None
     try:
@@ -76,7 +96,7 @@ def main():
         pass
 
     output = Path('build/helium_{}_{}-windows.zip'.format(
-        version, _get_target_cpu(build_outputs)))
+        version, target_cpu))
 
     excluded_files = set([
         Path('mini_installer.exe'),
