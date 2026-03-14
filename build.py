@@ -143,7 +143,6 @@ def main():
         type=int,
     )
     parser.add_argument('--build-installer', action='store_true')
-    parser.add_argument('--do-package', action='store_true')
     parser.add_argument(
         '--arm',
         action='store_true'
@@ -358,7 +357,7 @@ def main():
         ninja_commandline.append('setup')
 
     if not args.ci or args.build_installer:
-        ninja_commandline.append('mini_installer')
+        ninja_commandline.append('mini_installer_archive')
 
     # Run ninja
     if args.ci:
@@ -367,11 +366,10 @@ def main():
         timeout = int(max_time - secs_spent)
         print(f"{timeout} seconds left for build")
 
-        if args.do_package:
+        _run_build_process_timeout(*ninja_commandline, timeout=timeout)
+        if args.build_installer:
             os.chdir(_ROOT_DIR)
-            subprocess.run([sys.executable, 'package.py'])
-        else:
-            _run_build_process_timeout(*ninja_commandline, timeout=timeout)
+            subprocess.run([sys.executable, 'package.py'], check=True)
     else:
         _run_build_process(*ninja_commandline)
 
