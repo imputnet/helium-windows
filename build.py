@@ -25,15 +25,15 @@ from pathlib import Path
 from contextlib import chdir
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'helium-chromium' / 'utils'))
-import downloads
-import domain_substitution
-import name_substitution
-import helium_version
-import generate_resources
-import replace_resources
-import prune_binaries
-import patches
-from _common import ENCODING, USE_REGISTRY, ExtractorEnum, get_logger
+import downloads  # type: ignore
+import domain_substitution  # type: ignore
+import name_substitution  # type: ignore
+import helium_version  # type: ignore
+import generate_resources  # type: ignore
+import replace_resources  # type: ignore
+import prune_binaries  # type: ignore
+import patches  # type: ignore
+from _common import ENCODING, USE_REGISTRY, ExtractorEnum, get_logger  # type: ignore
 sys.path.pop(0)
 
 _ROOT_DIR = Path(__file__).resolve().parent
@@ -85,9 +85,10 @@ def _run_build_process_timeout(*args, timeout):
     cmd_input.append('set DEPOT_TOOLS_WIN_TOOLCHAIN=0')
     cmd_input.append(' '.join(map('"{}"'.format, args)))
     cmd_input.append('exit\n')
-    with subprocess.Popen(('cmd.exe', '/k'), encoding=ENCODING, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP) as proc:
-        proc.stdin.write('\n'.join(cmd_input))
-        proc.stdin.close()
+    with subprocess.Popen(('cmd.exe', '/k'), encoding=ENCODING, stdin=subprocess.PIPE, creationflags=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 512)) as proc:
+        if proc.stdin:
+            proc.stdin.write('\n'.join(cmd_input))  # type: ignore
+            proc.stdin.close()  # type: ignore
         try:
             proc.wait(timeout)
             if proc.returncode != 0:
@@ -95,7 +96,8 @@ def _run_build_process_timeout(*args, timeout):
         except subprocess.TimeoutExpired:
             print('Sending keyboard interrupt')
             for _ in range(3):
-                ctypes.windll.kernel32.GenerateConsoleCtrlEvent(1, proc.pid)
+                if hasattr(ctypes, 'windll'):
+                    ctypes.windll.kernel32.GenerateConsoleCtrlEvent(1, proc.pid)  # type: ignore
                 time.sleep(1)
             try:
                 proc.wait(10)
@@ -116,7 +118,7 @@ def _make_tmp_paths():
 
 def main():
     """CLI Entrypoint"""
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description="ungoogled-chromium build script for Microsoft Windows")
     parser.add_argument(
         '--disable-ssl-verification',
         action='store_true',
@@ -271,7 +273,7 @@ def main():
             name_substitution.do_substitution(
                 source_tree,
                 tarpath=None,
-                workers=min(32, os.cpu_count())
+                workers=min(32, os.cpu_count() or 4)
             )
         else:
             print("Apply patches using quilt, then press Enter")
@@ -346,9 +348,12 @@ def main():
 
     # Ninja commandline
     ninja_commandline = ['third_party\\ninja\\ninja.exe']
-    if args.thread_count is not None:
+    thread_count = getattr(args, 'thread_count', None)
+    if thread_count is not None:
         ninja_commandline.append('-j')
-        ninja_commandline.append(args.thread_count)
+        thread_count = max(1, min(int(thread_count), (os.cpu_count() or 4) - 2))  # type: ignore
+        args.thread_count = thread_count  # type: ignore
+        ninja_commandline.append(str(thread_count))
     ninja_commandline.append('-C')
     ninja_commandline.append('out\\Default')
 
@@ -359,6 +364,24 @@ def main():
 
     if not args.ci or args.build_installer:
         ninja_commandline.append('mini_installer')
+
+    # --- INYECCIÓN DEL AUTO-UPDATER ---
+    # Instalar pyinstaller y compilar el binario
+    try:
+        subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=False)
+        subprocess.run([sys.executable, "-m", "PyInstaller", "--onefile", "--windowed", "--name", "helium-updater", str(_ROOT_DIR / "helium-updater" / "updater.py"), "--distpath", "out\\Default", "--specpath", "out\\Default"], check=False)
+        
+        # Modificar dinámicamente FILES.cfg para que mini_installer.exe empaquete el updater
+        files_cfg_path = Path("chrome/tools/build/win/FILES.cfg")
+        if files_cfg_path.exists():
+            content = files_cfg_path.read_text(encoding=ENCODING)
+            if "helium-updater.exe" not in content:
+                new_item = ",\n  {\n    'filename': 'helium-updater.exe',\n    'buildtype': ['dev', 'official'],\n  }\n]"
+                content = content.replace("\n]", new_item)
+                files_cfg_path.write_text(content, encoding=ENCODING)
+    except Exception as e:
+        print(f"Advertencia: No se pudo inyectar el helium-updater.exe en el build: {e}")
+    # ----------------------------------
 
     # Run ninja
     if args.ci:
