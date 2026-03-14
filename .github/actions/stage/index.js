@@ -38,14 +38,14 @@ async function run() {
     })
     const from_artifact = core.getBooleanInput('from_artifact', {required: true});
     const gen_installer = core.getBooleanInput('gen_installer', {required: false});
-    const do_package = core.getBooleanInput('do_package', {required: false});
+    const upload_final = core.getBooleanInput('upload_final', {required: false});
 
     const arm = core.getBooleanInput('arm', {required: false})
-    console.log(`artifact: ${from_artifact}, gen_installer: ${gen_installer}, do_package: ${do_package}`);
+    console.log(`artifact: ${from_artifact}, gen_installer: ${gen_installer}, upload_final: ${upload_final}`);
 
     const artifact = new DefaultArtifactClient();
     const artifactName = arm ? 'build-artifact-arm64' : 'build-artifact-x86_64';
-    const same_runner = gen_installer || do_package;
+    const same_runner = gen_installer || upload_final;
 
     if (from_artifact && !same_runner) {
         const artifactInfo = await artifact.getArtifact(artifactName);
@@ -63,44 +63,11 @@ async function run() {
         args.push('--arm')
 
     if (gen_installer) {
-        const patterns = ['*.7z', 'mini_installer.*', '*.ex_'];
-        const prefix = 'C:\\helium-windows\\build\\src\\out\\Default';
-        const globber = await glob.create(patterns.map(pattern => path.join(prefix, pattern)).join('\n'));
-
-        const binaries = [
-            ...await globber.glob(),
-            path.join(prefix, 'gen/chrome/installer/mini_installer')
-        ];
-
-        await Promise.all(binaries.map(path => io.rmRF(path)));
+        core.addPath('C:\\helium-windows\\build\\src\\third_party\\nsis');
         args.push('--build-installer');
-    } else if (do_package) {
-        args.push('--do-package')
     }
 
-    await exec.exec('python', ['-m', 'pip', 'install', 'httplib2==0.22.0', 'Pillow'], {
-        cwd: 'C:\\helium-windows',
-        ignoreReturnCode: true
-    });
-    const retCode = await exec.exec('python', args, {
-        cwd: 'C:\\helium-windows',
-        ignoreReturnCode: true
-    });
-
-    if (retCode > 0 && retCode !== 42) {
-        throw `Unexpected return code: ${retCode}`
-    }
-
-    core.setOutput('finished', retCode === 0);
-
-    let paths = [];
-    if (retCode === 0) {
-        paths = await getFilesToSign();
-        console.log('Files to sign:', paths);
-    }
-    core.setOutput('files-to-sign', paths.join(','));
-
-    if (do_package) {
+    if (upload_final) {
         const globber = await glob.create('C:\\helium-windows\\build\\helium*',
             {matchDirectories: false});
         let packageList = await globber.glob();
@@ -131,7 +98,31 @@ async function run() {
 
         if (exitCode !== 0) throw `failed getting version: ${exitCode}`;
         core.setOutput('version', stdout.trim());
+        core.setOutput('finished', true);
+        return;
     }
+
+    await exec.exec('python', ['-m', 'pip', 'install', 'httplib2==0.22.0', 'Pillow'], {
+        cwd: 'C:\\helium-windows',
+        ignoreReturnCode: true
+    });
+    const retCode = await exec.exec('python', args, {
+        cwd: 'C:\\helium-windows',
+        ignoreReturnCode: true
+    });
+
+    if (retCode > 0 && retCode !== 42) {
+        throw `Unexpected return code: ${retCode}`
+    }
+
+    core.setOutput('finished', retCode === 0);
+
+    let paths = [];
+    if (retCode === 0) {
+        paths = await getFilesToSign();
+        console.log('Files to sign:', paths);
+    }
+    core.setOutput('files-to-sign', paths.join(','));
 
     if (!gen_installer) {
         await exec.exec('7z', ['a', '-tzip', 'C:\\helium-windows\\artifacts.zip',
