@@ -11,6 +11,11 @@ on:
         required: false
         description: 'Runner image name'
         default: 'windows-2022'
+      do-release:
+        required: false
+        type: boolean
+        description: 'Create a release after build is done'
+        default: false
 
 jobs:
 {%- for arch in ["", "arm"] %}
@@ -129,7 +134,7 @@ jobs:
 {% raw %}
   publish-release:
     needs: [build-final, build-arm-final]
-    if: ${{ !cancelled() && !failure()
+    if: ${{ inputs.do-release && !cancelled() && !failure()
             && needs.build-final.result == 'success'
             && needs.build-arm-final.result == 'success' }}
     runs-on: ubuntu-latest
