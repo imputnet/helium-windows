@@ -78,6 +78,16 @@ A zip archive and an installer will be created under `build`.
 
 An efficient way to delete large amounts of files is using `Remove-Item PATH -Recurse -Force`. Be careful however, files deleted by that command will be permanently lost.
 
+## Auto-Updater
+
+Helium for Windows now includes a standalone auto-updater (`helium-updater.exe`), which is automatically compiled and bundled during the `package.py` / `mini_installer` steps.
+
+* The updater downloads and applies the latest `mini_installer.exe` from the latest GitHub Release when a new version is detected.
+* You can install the updater to run automatically in the background (via Windows Task Scheduler) by invoking it once from an Administrator prompt:
+  ```cmd
+  helium-updater.exe --install
+  ```
+
 ## Developer info
 
 ### First-time setup
