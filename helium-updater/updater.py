@@ -141,7 +141,7 @@ def apply_update(payload_path: str) -> bool:
         return False
 
 def install_scheduled_task():
-    """Registra el updater como una Scheduled Task que corre diariamente al inicio de sesión."""
+    """Registers the updater as a Scheduled Task that runs on every user logon."""
     executable = os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__)
     task_name = "HeliumAutoUpdater"
     
@@ -157,6 +157,7 @@ def install_scheduled_task():
         logging.info("Scheduled task 'HeliumAutoUpdater' installed successfully.")
     except subprocess.CalledProcessError as e:
         logging.error(f"Failed to install scheduled task: {e}")
+        sys.exit(1)
 
 def verify_sha256(path: str, expected_hash_str: str) -> bool:
     """Verifies the SHA256 of the downloaded file."""
@@ -217,12 +218,20 @@ def main():
             if verify_sha256(payload_path, expected_sha):
                 logging.info("SHA256 signature verified successfully.")
                 success = apply_update(payload_path)
+                try:
+                    os.remove(payload_path)
+                except OSError:
+                    pass
                 if success:
                     logging.info("Update applied successfully.")
                 else:
                     logging.error("Update application failed.")
                     sys.exit(1)
             else:
+                try:
+                    os.remove(payload_path)
+                except OSError:
+                    pass
                 logging.error("SHA256 verification failed. The downloaded installer may be corrupted or tampered with.")
                 sys.exit(1)
         else:

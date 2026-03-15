@@ -341,18 +341,21 @@ def main():
     # Install pyinstaller and compile the binary
     try:
         subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=False)
-        subprocess.run([sys.executable, "-m", "PyInstaller", "--onefile", "--windowed", "--name", "helium-updater", str(_ROOT_DIR / "helium-updater" / "updater.py"), "--distpath", "out\\Default", "--specpath", "out\\Default"], check=False)
+        build_result = subprocess.run([sys.executable, "-m", "PyInstaller", "--onefile", "--windowed", "--name", "helium-updater", str(_ROOT_DIR / "helium-updater" / "updater.py"), "--distpath", "out\\Default", "--specpath", "out\\Default"], check=False)
         
-        # Dynamically modify FILES.cfg so mini_installer.exe packages the updater
-        files_cfg_path = Path("chrome/tools/build/win/FILES.cfg")
-        if files_cfg_path.exists():
-            content = files_cfg_path.read_text(encoding=ENCODING)
-            if "helium-updater.exe" not in content:
-                last_bracket = content.rfind("\n]")
-                if last_bracket != -1:
-                    new_item = ",\n  {\n    'filename': 'helium-updater.exe',\n    'buildtype': ['dev', 'official'],\n  }"
-                    content = content[:last_bracket] + new_item + content[last_bracket:]  # type: ignore
-                    files_cfg_path.write_text(content, encoding=ENCODING)
+        if build_result.returncode == 0:
+            # Dynamically modify FILES.cfg so mini_installer.exe packages the updater
+            files_cfg_path = Path("chrome/tools/build/win/FILES.cfg")
+            if files_cfg_path.exists():
+                content = files_cfg_path.read_text(encoding=ENCODING)
+                if "helium-updater.exe" not in content:
+                    last_bracket = content.rfind("\n]")
+                    if last_bracket != -1:
+                        new_item = ",\n  {\n    'filename': 'helium-updater.exe',\n    'buildtype': ['dev', 'official'],\n  }"
+                        content = content[:last_bracket] + new_item + content[last_bracket:]  # type: ignore
+                        files_cfg_path.write_text(content, encoding=ENCODING)
+        else:
+            print("Warning: PyInstaller failed; helium-updater.exe will not be included in the package.")
     except Exception as e:
         print(f"Warning: Could not inject helium-updater.exe into the build: {e}")
     # ----------------------------------
