@@ -3,13 +3,13 @@
 ; the terms of the GPL-3.0 license that can be found in the LICENSE file.
 ;
 ; NSIS installer script for Helium browser.
-; Wraps setup.exe + chrome.7z with a GUI.
+; Wraps setup.exe + helium.7z with a GUI.
 ;
 ; Required defines (passed via makensis -D):
 ;   VERSION    - Helium version string (e.g., 0.10.4.1)
 ;   ARCH       - Target architecture (x64 or arm64)
 ;   SETUP_EXE  - Path to setup.exe
-;   CHROME_7Z  - Path to chrome.7z (uncompressed; NSIS handles compression)
+;   HELIUM_7Z  - Path to helium.7z (uncompressed; NSIS handles compression)
 ;   ICON_FILE  - Path to helium .ico file
 ;   OUTPUT_FILE - Output installer .exe path
 ;   LICENSE_FILE - Path to LICENSE file
@@ -181,10 +181,10 @@ Section "Install" SecInstall
   SetOutPath "$TEMP\helium_install"
   DetailPrint "Extracting installation files..."
   File "${SETUP_EXE}"
-  File /oname=chrome.7z "${CHROME_7Z}"
+  File /oname=helium.7z "${HELIUM_7Z}"
 
   ; Build setup.exe command line
-  StrCpy $0 '"$TEMP\helium_install\setup.exe" --uncompressed-archive="$TEMP\helium_install\chrome.7z" --do-not-launch-chrome'
+  StrCpy $0 '"$TEMP\helium_install\setup.exe" --uncompressed-archive="$TEMP\helium_install\helium.7z" --do-not-launch-chrome'
 
   ${If} $InstallType == "system"
     StrCpy $0 '$0 --system-level'
@@ -290,7 +290,7 @@ Section "Install" SecInstall
   ; Clean up extracted files
   DetailPrint "Cleaning up..."
   Delete "$TEMP\helium_install\setup.exe"
-  Delete "$TEMP\helium_install\chrome.7z"
+  Delete "$TEMP\helium_install\helium.7z"
   RMDir "$TEMP\helium_install"
 
   ; Abort if installation failed (prevents finish page from showing success)

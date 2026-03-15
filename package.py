@@ -54,7 +54,7 @@ def _build_nsis_installer(version, arch, build_outputs, output_file):
         f'-DVERSION={version}',
         f'-DARCH={arch}',
         f'-DSETUP_EXE={build_outputs / "setup.exe"}',
-        f'-DCHROME_7Z={build_outputs / "chrome.7z"}',
+        f'-DHELIUM_7Z={build_outputs / "helium.7z"}',
         f'-DICON_FILE={_ICON_PATH}',
         f'-DOUTPUT_FILE={output_file}',
         f'-DLICENSE_FILE={_ROOT_DIR / "LICENSE"}',
@@ -102,7 +102,7 @@ def main():
         Path('mini_installer.exe'),
         Path('mini_installer_exe_version.rc'),
         Path('setup.exe'),
-        Path('chrome.packed.7z'),
+        Path('helium.packed.7z'),
     ])
     files_generator = filescfg.filescfg_generator(
         Path('build/src/chrome/tools/build/win/FILES.cfg'),
