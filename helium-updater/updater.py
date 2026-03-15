@@ -13,13 +13,16 @@ import platform
 import hashlib
 from typing import Optional, Tuple
 
+handlers: list[logging.Handler] = [
+    logging.FileHandler(os.path.join(os.environ.get("TEMP", "C:\\"), "helium_updater.log"))
+]
+if sys.stdout is not None:
+    handlers.append(logging.StreamHandler(sys.stdout))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler(os.path.join(os.environ.get("TEMP", "C:\\"), "helium_updater.log"))
-    ]
+    handlers=handlers
 )
 
 REPO_API_URL = "https://api.github.com/repos/imputnet/helium-windows/releases/latest"
@@ -188,6 +191,13 @@ def main():
     
     if not remote_version or not download_url or not sha256_url:
         logging.error("Could not obtain update information (including SHA256) from the network. Exiting.")
+        if not remote_version:
+            logging.error("Could not fetch latest release information from the network. Exiting.")
+        elif not download_url or not sha256_url:
+            logging.error(
+                f"No compatible installer asset (arch={platform.machine()}) or its SHA256 sidecar "
+                f"found in release {remote_version}. Exiting."
+            )
         sys.exit(1)
         
     if not local_version or is_newer_version(local_version, remote_version):

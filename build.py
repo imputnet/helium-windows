@@ -337,11 +337,20 @@ def main():
     # Enter source tree to run build commands
     os.chdir(source_tree)
 
-    # --- AUTO-UPDATER INJECTION ---
-    # Install pyinstaller and compile the binary
     try:
         subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=False)
-        build_result = subprocess.run([sys.executable, "-m", "PyInstaller", "--onefile", "--windowed", "--name", "helium-updater", str(_ROOT_DIR / "helium-updater" / "updater.py"), "--distpath", "out\\Default", "--specpath", "out\\Default"], check=False)
+        build_result = subprocess.run(
+            [
+                sys.executable, "-m", "PyInstaller", 
+                "--onefile", "--windowed", 
+                "--name", "helium-updater", 
+                str(_ROOT_DIR / "helium-updater" / "updater.py"), 
+                "--distpath", "out\\Default", 
+                "--specpath", "out\\Default",
+                "--workpath", str(_ROOT_DIR / "out" / "Default" / "helium-updater-build"),
+            ], 
+            check=False
+        )
         
         if build_result.returncode == 0:
             # Dynamically modify FILES.cfg so mini_installer.exe packages the updater
