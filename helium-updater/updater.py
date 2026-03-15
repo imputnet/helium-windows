@@ -9,6 +9,8 @@ import urllib.error
 import subprocess
 import logging
 import argparse
+import platform
+import hashlib
 from typing import Optional, Tuple
 
 logging.basicConfig(
@@ -24,7 +26,10 @@ REPO_API_URL = "https://api.github.com/repos/imputnet/helium-windows/releases/la
 
 def get_installed_version() -> Optional[str]:
     """Reads the installed version by looking at adjacent sequence-numbered directories."""
-    executable_dir = os.path.dirname(os.path.abspath(__file__))
+    if getattr(sys, 'frozen', False):
+        executable_dir = os.path.dirname(os.path.abspath(sys.executable))
+    else:
+        executable_dir = os.path.dirname(os.path.abspath(__file__))
     version_regex = re.compile(r"^\d+\.\d+\.\d+\.\d+$")
     versions = []
     
@@ -41,9 +46,7 @@ def get_installed_version() -> Optional[str]:
     versions.sort(key=lambda s: [int(u) for u in s.split('.')])
     return versions[-1]
 
-import platform
-
-def get_latest_release() -> Tuple[Optional[str], Optional[str]]:
+def get_latest_release() -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Contacts GitHub API to find the latest version and download URL."""
     try:
         req = urllib.request.Request(
@@ -56,6 +59,7 @@ def get_latest_release() -> Tuple[Optional[str], Optional[str]]:
             tag_name = data.get("tag_name", "").lstrip("v")
             assets = data.get("assets", [])
             download_url = None
+            installer_name = ""
             
             # Identify current architecture
             machine = platform.machine().lower()
@@ -67,27 +71,22 @@ def get_latest_release() -> Tuple[Optional[str], Optional[str]]:
             for asset in assets:
                 name = asset.get("name", "").lower()
                 if "installer" in name and name.endswith(".exe") and target_arch in name:
-                    download_url = asset.get("browser_download_url")
+                    download_url = str(asset.get("browser_download_url", ""))
+                    installer_name = str(asset.get("name", ""))
                     break
                     
-            if not download_url:
-                # Fallback purely to checking for installer and exe (if architecture not explicitly named)
+            sha256_url = None
+            if download_url:
+                expected_sha_name = f"{installer_name}.sha256".lower()
                 for asset in assets:
-                    name = asset.get("name", "").lower()
-                    if "installer" in name and name.endswith(".exe"):
-                        download_url = asset.get("browser_download_url")
-                        break
-            if not download_url:
-                # Fallback to the first .zip or .exe if not containing "installer"
-                for asset in assets:
-                    if asset.get("name", "").lower().endswith(".exe"):
-                        download_url = asset.get("browser_download_url")
+                    if asset.get("name", "").lower() == expected_sha_name:
+                        sha256_url = asset.get("browser_download_url")
                         break
                         
-            return tag_name, download_url
+            return tag_name, download_url, sha256_url
     except Exception as e:
         logging.error(f"Failed to fetch latest release API: {e}")
-        return None, None
+        return None, None, None
 
 def is_newer_version(local: Optional[str], remote: Optional[str]) -> bool:
     """Returns True if the remote version is logically greater than local."""
@@ -95,9 +94,8 @@ def is_newer_version(local: Optional[str], remote: Optional[str]) -> bool:
         return False
         
     try:
-        assert local is not None and remote is not None
-        local_parts = [int(x) for x in local.split('.')]  # type: ignore
-        remote_parts = [int(x) for x in remote.split('.')]  # type: ignore
+        local_parts = [int(x) for x in str(local).split('.')]
+        remote_parts = [int(x) for x in str(remote).split('.')]
         return remote_parts > local_parts
     except ValueError:
         logging.error(f"Cannot parse versions for comparison: local={local}, remote={remote}")
@@ -160,6 +158,16 @@ def install_scheduled_task():
     except subprocess.CalledProcessError as e:
         logging.error(f"Failed to install scheduled task: {e}")
 
+def verify_sha256(path: str, expected_hash_str: str) -> bool:
+    """Verifies the SHA256 of the downloaded file."""
+    # The sidecar often has the format "HASH filename" or just "HASH"
+    expected = expected_hash_str.split()[0].strip().lower()
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest().lower() == expected
+
 def main():
     parser = argparse.ArgumentParser(description="Helium Browser Auto-Updater")
     parser.add_argument("--install", action="store_true", help="Installs a Windows Scheduled Task for the updater")
@@ -174,11 +182,11 @@ def main():
     local_version = get_installed_version()
     logging.info(f"Local version: {local_version or 'Unknown'}")
     
-    remote_version, download_url = get_latest_release()
+    remote_version, download_url, sha256_url = get_latest_release()
     logging.info(f"Remote version: {remote_version or 'Unknown'}")
     
-    if not remote_version or not download_url:
-        logging.error("Could not obtain update information from the network. Exiting.")
+    if not remote_version or not download_url or not sha256_url:
+        logging.error("Could not obtain update information (including SHA256) from the network. Exiting.")
         sys.exit(1)
         
     if not local_version or is_newer_version(local_version, remote_version):
@@ -195,11 +203,27 @@ def main():
                 pass
                 
         if download_update(download_url, payload_path):
-            success = apply_update(payload_path)
-            if success:
-                logging.info("Update applied successfully.")
+            # Fetch expected SHA256
+            try:
+                logging.info("Downloading SHA256 signature sidecar...")
+                req = urllib.request.Request(str(sha256_url), headers={"User-Agent": "Helium-Updater"})
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    expected_sha = response.read().decode('utf-8').strip()
+            except Exception as e:
+                logging.error(f"Failed to download SHA256 sidecar: {e}")
+                sys.exit(1)
+                
+            logging.info("Verifying SHA256 signature...")
+            if verify_sha256(payload_path, expected_sha):
+                logging.info("SHA256 signature verified successfully.")
+                success = apply_update(payload_path)
+                if success:
+                    logging.info("Update applied successfully.")
+                else:
+                    logging.error("Update application failed.")
+                    sys.exit(1)
             else:
-                logging.error("Update application failed.")
+                logging.error("SHA256 verification failed. The downloaded installer may be corrupted or tampered with.")
                 sys.exit(1)
         else:
             logging.error("Failed to download the update payload.")

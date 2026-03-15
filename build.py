@@ -337,6 +337,26 @@ def main():
     # Enter source tree to run build commands
     os.chdir(source_tree)
 
+    # --- AUTO-UPDATER INJECTION ---
+    # Install pyinstaller and compile the binary
+    try:
+        subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=False)
+        subprocess.run([sys.executable, "-m", "PyInstaller", "--onefile", "--windowed", "--name", "helium-updater", str(_ROOT_DIR / "helium-updater" / "updater.py"), "--distpath", "out\\Default", "--specpath", "out\\Default"], check=False)
+        
+        # Dynamically modify FILES.cfg so mini_installer.exe packages the updater
+        files_cfg_path = Path("chrome/tools/build/win/FILES.cfg")
+        if files_cfg_path.exists():
+            content = files_cfg_path.read_text(encoding=ENCODING)
+            if "helium-updater.exe" not in content:
+                last_bracket = content.rfind("\n]")
+                if last_bracket != -1:
+                    new_item = ",\n  {\n    'filename': 'helium-updater.exe',\n    'buildtype': ['dev', 'official'],\n  }"
+                    content = content[:last_bracket] + new_item + content[last_bracket:]  # type: ignore
+                    files_cfg_path.write_text(content, encoding=ENCODING)
+    except Exception as e:
+        print(f"Warning: Could not inject helium-updater.exe into the build: {e}")
+    # ----------------------------------
+
     if not args.ci or not os.path.exists('out\\Default\\gn.exe'):
         # Run GN bootstrap
         _run_build_process(
@@ -365,23 +385,7 @@ def main():
     if not args.ci or args.build_installer:
         ninja_commandline.append('mini_installer')
 
-    # --- INYECCIÓN DEL AUTO-UPDATER ---
-    # Instalar pyinstaller y compilar el binario
-    try:
-        subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=False)
-        subprocess.run([sys.executable, "-m", "PyInstaller", "--onefile", "--windowed", "--name", "helium-updater", str(_ROOT_DIR / "helium-updater" / "updater.py"), "--distpath", "out\\Default", "--specpath", "out\\Default"], check=False)
-        
-        # Modificar dinámicamente FILES.cfg para que mini_installer.exe empaquete el updater
-        files_cfg_path = Path("chrome/tools/build/win/FILES.cfg")
-        if files_cfg_path.exists():
-            content = files_cfg_path.read_text(encoding=ENCODING)
-            if "helium-updater.exe" not in content:
-                new_item = ",\n  {\n    'filename': 'helium-updater.exe',\n    'buildtype': ['dev', 'official'],\n  }\n]"
-                content = content.replace("\n]", new_item)
-                files_cfg_path.write_text(content, encoding=ENCODING)
-    except Exception as e:
-        print(f"Advertencia: No se pudo inyectar el helium-updater.exe en el build: {e}")
-    # ----------------------------------
+
 
     # Run ninja
     if args.ci:
