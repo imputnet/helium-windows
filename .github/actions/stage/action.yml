@@ -12,8 +12,8 @@ inputs:
     description: Generate the installer after signing
     required: false
     default: false
-  do_package:
-    description: Run package.py after installer signing
+  upload_final:
+    description: Upload artifacts after installer creation and signing
     required: false
     default: false
 outputs:
