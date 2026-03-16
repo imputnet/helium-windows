@@ -173,3 +173,37 @@
                  },
                  'namespace': 'Chromium.Policies.Chromium',
              },
+--- a/chrome/installer/setup/BUILD.gn
++++ b/chrome/installer/setup/BUILD.gn
+@@ -111,6 +111,7 @@ if (is_win) {
+       "//components/crash/core/common",
+       "//components/metrics:client_info",
+       "//components/metrics:metrics_pref_names",
++      "//base/version_info",
+       "//components/version_info:channel",
+       "//third_party/crashpad/crashpad/client",
+       "//third_party/crashpad/crashpad/util",
+--- a/chrome/installer/setup/install_worker.cc
++++ b/chrome/installer/setup/install_worker.cc
+@@ -33,6 +33,7 @@
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/version.h"
+ #include "base/version_info/channel.h"
++#include "base/version_info/version_info.h"
+ #include "base/win/registry.h"
+ #include "base/win/security_util.h"
+ #include "base/win/sid.h"
+@@ -562,10 +563,11 @@ void AddUninstallShortcutWorkItems(const
+                                          InstallUtil::GetPublisherName(), true);
+     install_list->AddSetRegValueWorkItem(
+         reg_root, uninstall_reg, KEY_WOW64_32KEY, L"Version",
+-        ASCIIToWide(new_version.GetString()), true);
++        ASCIIToWide(version_info::GetHeliumVersionNumber()), true);
+     install_list->AddSetRegValueWorkItem(
+         reg_root, uninstall_reg, KEY_WOW64_32KEY, L"DisplayVersion",
+-        ASCIIToWide(new_version.GetString()), true);
++        ASCIIToWide(version_info::GetHeliumVersionNumber()),
++        true);
+     // TODO(wfh): Ensure that this value is preserved in the 64-bit hive when
+     // 64-bit installs place the uninstall information into the 64-bit registry.
+     install_list->AddSetRegValueWorkItem(reg_root, uninstall_reg,
