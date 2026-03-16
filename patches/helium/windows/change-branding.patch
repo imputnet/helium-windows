@@ -71,3 +71,105 @@
          .tracing_service_clsid = {0x83f69367,
                                    0x442d,
                                    0x447f,
+--- a/chrome/installer/setup/installer_crash_reporter_client.cc
++++ b/chrome/installer/setup/installer_crash_reporter_client.cc
+@@ -103,7 +103,7 @@ bool InstallerCrashReporterClient::Repor
+       L"SOFTWARE\\Policies\\Google\\Chrome";
+ #else
+   static const wchar_t kRegistryChromePolicyKey[] =
+-      L"SOFTWARE\\Policies\\Chromium";
++      L"SOFTWARE\\Policies\\Helium";
+ #endif
+   static const wchar_t kMetricsReportingEnabled[] = L"MetricsReportingEnabled";
+ 
+--- a/components/policy/tools/generate_policy_source.py
++++ b/components/policy/tools/generate_policy_source.py
+@@ -28,7 +28,7 @@ from xml.sax.saxutils import escape as x
+ 
+ CHROME_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Google\\\\Chrome'
+ CHROME_FOR_TESTING_POLICY_KEY = CHROME_POLICY_KEY + ' for Testing'
+-CHROMIUM_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Chromium'
++CHROMIUM_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Helium'
+ PLATFORM_STRINGS = {
+     'chrome_frame': ['win'],
+     'chrome_os': ['chrome_os'],
+--- a/chrome/installer/setup/setup_constants.cc
++++ b/chrome/installer/setup/setup_constants.cc
+@@ -7,14 +7,14 @@
+ namespace installer {
+ 
+ // Elements that make up install paths.
+-const wchar_t kChromeArchive[] = L"chrome.7z";
+-const wchar_t kChromeCompressedArchive[] = L"chrome.packed.7z";
++const wchar_t kChromeArchive[] = L"helium.7z";
++const wchar_t kChromeCompressedArchive[] = L"helium.packed.7z";
+ const char kVisualElements[] = "VisualElements";
+ const wchar_t kVisualElementsManifest[] = L"chrome.VisualElementsManifest.xml";
+ 
+ // Sub directory of install source package under install temporary directory.
+ const wchar_t kInstallSourceDir[] = L"source";
+-const wchar_t kInstallSourceChromeDir[] = L"Chrome-bin";
++const wchar_t kInstallSourceChromeDir[] = L"Helium-bin";
+ 
+ const wchar_t kMediaPlayerRegPath[] =
+     L"Software\\Microsoft\\MediaPlayer\\ShimInclusionList";
+--- a/chrome/installer/util/logging_installer.cc
++++ b/chrome/installer/util/logging_installer.cc
+@@ -126,7 +126,7 @@ base::FilePath GetLogFilePath(const inst
+ #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+       FILE_PATH_LITERAL("chrome_installer.log");
+ #else  // BUILDFLAG(CHROMIUM_BRANDING)
+-      FILE_PATH_LITERAL("chromium_installer.log");
++      FILE_PATH_LITERAL("helium_installer.log");
+ #endif
+ 
+   // Fallback to current directory if getting the secure or temp directory
+--- a/chrome/tools/build/win/create_installer_archive.py
++++ b/chrome/tools/build/win/create_installer_archive.py
+@@ -25,7 +25,7 @@ ARCHIVE_DIR = "installer_archive"
+ # suffix to uncompressed full archive file, appended to options.output_name
+ ARCHIVE_SUFFIX = ".7z"
+ BSDIFF_EXEC = "bsdiff.exe"
+-CHROME_DIR = "Chrome-bin"
++CHROME_DIR = "Helium-bin"
+ CHROME_PATCH_FILE_SUFFIX = "_patch"  # prefixed by options.output_name
+ 
+ # compressed full archive suffix, will be prefixed by options.output_name
+@@ -724,7 +724,7 @@ def _ParseOptions():
+         '{BSDIFF|ZUCCHINI}.')
+     parser.add_option('-n',
+                       '--output_name',
+-                      default='chrome',
++                      default='helium',
+                       help='Name used to prefix names of generated archives.')
+     parser.add_option('--enable_hidpi',
+                       default='0',
+--- a/components/policy/tools/template_writers/writer_configuration.py
++++ b/components/policy/tools/template_writers/writer_configuration.py
+@@ -27,21 +27,21 @@ def GetConfigurationForBuild(defines):
+   if '_chromium' in defines:
+     config = {
+         'build': 'chromium',
+-        'app_name': 'Chromium',
++        'app_name': 'Helium',
+         'doc_url': 'https://chromeenterprise.google/policies/',
+         'frame_name': 'Chromium Frame',
+         'os_name': 'ChromiumOS',
+         'webview_name': 'Chromium WebView',
+         'win_config': {
+             'win': {
+-                'reg_mandatory_key_name': 'Software\\Policies\\Chromium',
++                'reg_mandatory_key_name': 'Software\\Policies\\Helium',
+                 'reg_recommended_key_name':
+-                'Software\\Policies\\Chromium\\Recommended',
++                'Software\\Policies\\Helium\\Recommended',
+                 'mandatory_category_path': ['chromium'],
+                 'recommended_category_path': ['chromium_recommended'],
+                 'category_path_strings': {
+-                    'chromium': 'Chromium',
+-                    'chromium_recommended': 'Chromium - {doc_recommended}',
++                    'chromium': 'Helium',
++                    'chromium_recommended': 'Helium - {doc_recommended}',
+                 },
+                 'namespace': 'Chromium.Policies.Chromium',
+             },
