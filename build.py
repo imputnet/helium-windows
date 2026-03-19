@@ -270,7 +270,8 @@ def main():
             name_substitution.do_substitution(
                 source_tree,
                 tarpath=None,
-                workers=min(32, os.cpu_count())
+                workers=min(32, os.cpu_count()),
+                dry_run=False
             )
         else:
             print("Apply patches using quilt, then press Enter")
