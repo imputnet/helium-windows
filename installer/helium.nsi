@@ -31,6 +31,7 @@
 Name "${PRODUCT_NAME} ${VERSION}"
 OutFile "${OUTPUT_FILE}"
 Unicode true
+ManifestDPIAware true
 SetCompressor /SOLID lzma
 RequestExecutionLevel user
 ShowInstDetails show
