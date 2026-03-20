@@ -9,7 +9,7 @@
 ;   VERSION    - Helium version string (e.g., 0.10.4.1)
 ;   ARCH       - Target architecture (x64 or arm64)
 ;   SETUP_EXE  - Path to setup.exe
-;   HELIUM_7Z  - Path to helium.7z (uncompressed; NSIS handles compression)
+;   HELIUM_7Z  - Path to helium.7z
 ;   ICON_FILE  - Path to helium .ico file
 ;   OUTPUT_FILE - Output installer .exe path
 ;   LICENSE_FILE - Path to LICENSE file
@@ -32,7 +32,7 @@ Name "${PRODUCT_NAME} ${VERSION}"
 OutFile "${OUTPUT_FILE}"
 Unicode true
 ManifestDPIAware true
-SetCompressor /SOLID lzma
+SetCompress off
 RequestExecutionLevel user
 ShowInstDetails show
 
@@ -185,7 +185,7 @@ Section "Install" SecInstall
   File /oname=helium.7z "${HELIUM_7Z}"
 
   ; Build setup.exe command line
-  StrCpy $0 '"$TEMP\helium_install\setup.exe" --uncompressed-archive="$TEMP\helium_install\helium.7z" --do-not-launch-chrome'
+  StrCpy $0 '"$TEMP\helium_install\setup.exe" --install-archive="$TEMP\helium_install\helium.7z" --do-not-launch-chrome'
 
   ${If} $InstallType == "system"
     StrCpy $0 '$0 --system-level'

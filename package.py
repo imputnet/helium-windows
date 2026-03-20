@@ -54,7 +54,7 @@ def _build_nsis_installer(version, arch, build_outputs, output_file):
         f'-DVERSION={version}',
         f'-DARCH={arch}',
         f'-DSETUP_EXE={build_outputs / "setup.exe"}',
-        f'-DHELIUM_7Z={build_outputs / "helium.7z"}',
+        f'-DHELIUM_7Z={build_outputs / "helium.packed.7z"}',
         f'-DICON_FILE={_ICON_PATH}',
         f'-DOUTPUT_FILE={output_file}',
         f'-DLICENSE_FILE={_ROOT_DIR / "LICENSE"}',
