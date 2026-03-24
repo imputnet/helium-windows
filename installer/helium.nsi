@@ -43,6 +43,7 @@ Var SetupFlags
 Var InstallFailed
 Var RadioUser
 Var RadioSystem
+Var SystemInstallExists
 
 ; --- MUI2 Configuration ---
 !define MUI_ICON "${ICON_FILE}"
@@ -100,7 +101,6 @@ Function InstallTypePage
 
   ${NSD_CreateRadioButton} 10u 30u 280u 12u "Install for current user only (recommended)"
   Pop $RadioUser
-  ${NSD_SetState} $RadioUser ${BST_CHECKED}
 
   ${NSD_CreateLabel} 24u 44u 280u 16u "Installs to your user profile. No administrator privileges required."
   Pop $0
@@ -110,6 +110,16 @@ Function InstallTypePage
 
   ${NSD_CreateLabel} 24u 80u 280u 16u "Installs system-wide. Requires administrator privileges."
   Pop $0
+
+  ${If} $SystemInstallExists == "1"
+    ; Disable per-user option and force system install when a system-wide installation already exists
+    EnableWindow $RadioUser 0
+    ${NSD_SetState} $RadioSystem ${BST_CHECKED}
+    ${NSD_CreateLabel} 10u 104u 300u 16u "A system-wide installation was detected. Per-user installation is unavailable."
+    Pop $0
+  ${Else}
+    ${NSD_SetState} $RadioUser ${BST_CHECKED}
+  ${EndIf}
 
   nsDialogs::Show
 FunctionEnd
@@ -150,6 +160,13 @@ Function .onInit
     StrCpy $SetupFlags '$SetupFlags --log-file="$1"'
   ${EndIf}
   ClearErrors
+
+  ; Check for existing system-wide installation
+  StrCpy $SystemInstallExists "0"
+  ${If} ${FileExists} "$PROGRAMFILES64\${PRODUCT_COMPANY_PATH}\${PRODUCT_NAME}\Application\chrome.exe"
+    StrCpy $SystemInstallExists "1"
+    StrCpy $InstallType "system"
+  ${EndIf}
 
   ; Check Windows version (setup.exe requires Windows 10+)
   ${IfNot} ${AtLeastWin10}
