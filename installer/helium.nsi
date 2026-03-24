@@ -118,7 +118,11 @@ Function InstallTypePage
     ${NSD_CreateLabel} 10u 104u 300u 16u "A system-wide installation was detected. Per-user installation is unavailable."
     Pop $0
   ${Else}
-    ${NSD_SetState} $RadioUser ${BST_CHECKED}
+    ${If} $InstallType == "system"
+      ${NSD_SetState} $RadioSystem ${BST_CHECKED}
+    ${Else}
+      ${NSD_SetState} $RadioUser ${BST_CHECKED}
+    ${EndIf}
   ${EndIf}
 
   nsDialogs::Show
