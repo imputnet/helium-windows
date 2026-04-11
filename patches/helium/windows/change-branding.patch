@@ -175,7 +175,7 @@
              },
 --- a/chrome/installer/setup/BUILD.gn
 +++ b/chrome/installer/setup/BUILD.gn
-@@ -111,6 +111,7 @@ if (is_win) {
+@@ -113,6 +113,7 @@ if (is_win) {
        "//components/crash/core/common",
        "//components/metrics:client_info",
        "//components/metrics:metrics_pref_names",
@@ -185,7 +185,7 @@
        "//third_party/crashpad/crashpad/util",
 --- a/chrome/installer/setup/install_worker.cc
 +++ b/chrome/installer/setup/install_worker.cc
-@@ -33,6 +33,7 @@
+@@ -34,6 +34,7 @@
  #include "base/strings/utf_string_conversions.h"
  #include "base/version.h"
  #include "base/version_info/channel.h"
@@ -193,7 +193,7 @@
  #include "base/win/registry.h"
  #include "base/win/security_util.h"
  #include "base/win/sid.h"
-@@ -562,10 +563,11 @@ void AddUninstallShortcutWorkItems(const
+@@ -579,10 +580,11 @@ void AddUninstallShortcutWorkItems(const
                                           InstallUtil::GetPublisherName(), true);
      install_list->AddSetRegValueWorkItem(
          reg_root, uninstall_reg, KEY_WOW64_32KEY, L"Version",
