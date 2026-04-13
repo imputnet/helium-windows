@@ -21,3 +21,5 @@ ungoogled-chromium/windows/windows-fix-remove-unused-preferences-fields.patch
 ungoogled-chromium/windows/windows-fix-missing-includes.patch
 
 helium/windows/change-branding.patch
+helium/windows/winsparkle-integration.patch
+helium/windows/enable-browser-updates.patch
