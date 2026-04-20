@@ -27,6 +27,7 @@ from contextlib import chdir
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'helium-chromium' / 'utils'))
 import downloads
 import domain_substitution
+import i18n_apply
 import name_substitution
 import helium_version
 import generate_resources
@@ -273,6 +274,9 @@ def main():
                 workers=min(32, os.cpu_count()),
                 dry_run=False
             )
+
+            # Append translations
+            i18n_apply.apply_translations(source_tree)
         else:
             print("Apply patches using quilt, then press Enter")
             input()
