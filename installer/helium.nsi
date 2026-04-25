@@ -44,6 +44,7 @@ Var InstallFailed
 Var RadioUser
 Var RadioSystem
 Var SystemInstallExists
+Var UpdateMode
 
 ; --- MUI2 Configuration ---
 !define MUI_ICON "${ICON_FILE}"
@@ -53,10 +54,14 @@ Var SystemInstallExists
 ; Welcome page
 !define MUI_WELCOMEPAGE_TITLE "Welcome to ${PRODUCT_NAME} Setup"
 !define MUI_WELCOMEPAGE_TEXT "Setup will install ${PRODUCT_NAME} ${VERSION} on your computer.$\r$\n$\r$\nClick Next to continue."
+!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipPageInUpdateMode
 !insertmacro MUI_PAGE_WELCOME
+!undef MUI_PAGE_CUSTOMFUNCTION_PRE
 
 ; License page
+!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipPageInUpdateMode
 !insertmacro MUI_PAGE_LICENSE "${LICENSE_FILE}"
+!undef MUI_PAGE_CUSTOMFUNCTION_PRE
 
 ; Install type selection (custom page)
 Page custom InstallTypePage InstallTypePageLeave
@@ -70,7 +75,9 @@ Page custom InstallTypePage InstallTypePageLeave
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_TEXT "Launch ${PRODUCT_NAME}"
 !define MUI_FINISHPAGE_RUN_FUNCTION LaunchHelium
+!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipPageInUpdateMode
 !insertmacro MUI_PAGE_FINISH
+!undef MUI_PAGE_CUSTOMFUNCTION_PRE
 
 ; --- Language ---
 !insertmacro MUI_LANGUAGE "English"
@@ -83,11 +90,21 @@ VIAddVersionKey "FileDescription" "${PRODUCT_NAME} Installer"
 VIAddVersionKey "FileVersion" "${VERSION}"
 VIAddVersionKey "LegalCopyright" "Copyright The Helium Authors"
 
+Function SkipPageInUpdateMode
+  ${If} $UpdateMode == "1"
+    Abort
+  ${EndIf}
+FunctionEnd
+
 ; =============================================================================
 ; Custom Install Type Page
 ; =============================================================================
 
 Function InstallTypePage
+  ${If} $UpdateMode == "1"
+    Abort
+  ${EndIf}
+
   !insertmacro MUI_HEADER_TEXT "Installation Type" "Choose how you want to install ${PRODUCT_NAME}."
 
   nsDialogs::Create 1018
@@ -145,7 +162,14 @@ Function .onInit
   ; Default to user install; parse command-line flags
   StrCpy $InstallType "user"
   StrCpy $SetupFlags ""
+  StrCpy $UpdateMode "0"
   ${GetParameters} $0
+
+  ${GetOptions} $0 "/UPDATE" $1
+  ${IfNot} ${Errors}
+    StrCpy $UpdateMode "1"
+  ${EndIf}
+  ClearErrors
 
   ${GetOptions} $0 "/SYSTEM" $1
   ${IfNot} ${Errors}
@@ -200,13 +224,14 @@ Section "Install" SecInstall
   StrCpy $InstallFailed ""
 
   ; Extract setup files to temp directory
-  SetOutPath "$TEMP\helium_install"
+  InitPluginsDir
+  SetOutPath "$PLUGINSDIR"
   DetailPrint "Extracting installation files..."
   File "${SETUP_EXE}"
   File /oname=helium.7z "${HELIUM_7Z}"
 
   ; Build setup.exe command line
-  StrCpy $0 '"$TEMP\helium_install\setup.exe" --install-archive="$TEMP\helium_install\helium.7z" --do-not-launch-chrome'
+  StrCpy $0 '"$PLUGINSDIR\setup.exe" --install-archive="$PLUGINSDIR\helium.7z" --do-not-launch-chrome'
 
   ${If} $InstallType == "system"
     StrCpy $0 '$0 --system-level'
@@ -308,12 +333,6 @@ Section "Install" SecInstall
       ${Break}
 
   ${EndSwitch}
-
-  ; Clean up extracted files
-  DetailPrint "Cleaning up..."
-  Delete "$TEMP\helium_install\setup.exe"
-  Delete "$TEMP\helium_install\helium.7z"
-  RMDir "$TEMP\helium_install"
 
   ; Abort if installation failed (prevents finish page from showing success)
   ${If} $InstallFailed == "1"

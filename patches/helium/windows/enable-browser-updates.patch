@@ -1,0 +1,62 @@
+--- a/components/helium_services/helium_services_helpers.cc
++++ b/components/helium_services/helium_services_helpers.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <optional>
+ 
++#include "build/build_config.h"
+ #include "base/functional/bind.h"
+ #include "base/strings/stringprintf.h"
+ #include "components/helium_services/pref_names.h"
+@@ -19,9 +20,15 @@
+ 
+ #if BUILDFLAG(IS_MAC)
+ #if defined(ARCH_CPU_ARM_FAMILY)
+-constexpr std::string cpu_arch = "arm64";
++constexpr char kBrowserUpdateArch[] = "arm64";
+ #else
+-constexpr std::string cpu_arch = "x86_64";
++constexpr char kBrowserUpdateArch[] = "x86_64";
++#endif
++#elif BUILDFLAG(IS_WIN)
++#if defined(ARCH_CPU_ARM64)
++constexpr char kBrowserUpdateArch[] = "arm64";
++#else
++constexpr char kBrowserUpdateArch[] = "x64";
+ #endif
+ #endif
+ 
+@@ -130,11 +137,14 @@
+ 
+ #if BUILDFLAG(IS_MAC)
+     std::string path = base::StringPrintf(
+-        "/updates/mac/appcast-%s.xml", cpu_arch);
+-    return GetServicesBaseURL(prefs).Resolve(path);
++        "/updates/mac/appcast-%s.xml", kBrowserUpdateArch);
++#elif BUILDFLAG(IS_WIN)
++    std::string path = base::StringPrintf(
++        "/updates/win/appcast-%s.xml", kBrowserUpdateArch);
+ #else
+     return GetDummyURL();
+ #endif
++    return GetServicesBaseURL(prefs).Resolve(path);
+ }
+ 
+ GURL GetComponentUpdateURL(const PrefService* prefs) {
+--- a/chrome/app/settings_strings.grdp
++++ b/chrome/app/settings_strings.grdp
+@@ -2075,12 +2075,12 @@
+   <message name="IDS_SETTINGS_HELIUM_SERVICES_UPDATE" desc="Toggle for automatic update downloads">
+     Allow automatic browser and component updates
+   </message>
+-  <if expr="is_macosx">
++  <if expr="is_macosx or is_win">
+     <message name="IDS_SETTINGS_HELIUM_SERVICES_UPDATE_DESCRIPTION" desc="Description of the toggle for automatic update downloads">
+       Helium will automatically download and install browser and component updates as they become available. We recommend keeping this setting enabled to ensure you get the latest features and security updates.
+     </message>
+   </if>
+-  <if expr="not is_macosx">
++  <if expr="not is_macosx and not is_win">
+     <message name="IDS_SETTINGS_HELIUM_SERVICES_UPDATE_DESCRIPTION" desc="Description of the toggle for automatic update downloads">
+       Helium will automatically download and install browser and component updates as they become available. We recommend keeping this setting enabled to ensure you get the latest features and security updates. Automatic core browser updates are not available on this platform yet, but component updates are. Please use external software to keep Helium up to date.
+     </message>
