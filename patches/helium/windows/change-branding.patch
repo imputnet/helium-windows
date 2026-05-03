@@ -175,7 +175,7 @@
              },
 --- a/chrome/installer/setup/BUILD.gn
 +++ b/chrome/installer/setup/BUILD.gn
-@@ -113,6 +113,7 @@ if (is_win) {
+@@ -114,6 +114,7 @@ if (is_win) {
        "//components/crash/core/common",
        "//components/metrics:client_info",
        "//components/metrics:metrics_pref_names",
