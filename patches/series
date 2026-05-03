@@ -4,10 +4,8 @@ ungoogled-chromium/windows/windows-disable-rcpy.patch
 ungoogled-chromium/windows/windows-fix-building-gn.patch
 ungoogled-chromium/windows/windows-compile-mini-installer.patch
 ungoogled-chromium/windows/windows-no-unknown-warnings.patch
-ungoogled-chromium/windows/windows-fix-rc.patch
 ungoogled-chromium/windows/windows-disable-event-log.patch
 ungoogled-chromium/windows/windows-disable-rlz.patch
-ungoogled-chromium/windows/windows-fix-command-ids.patch
 ungoogled-chromium/windows/windows-disable-download-warning-prompt.patch
 ungoogled-chromium/windows/windows-fix-rc-terminating-error.patch
 ungoogled-chromium/windows/windows-fix-building-without-safebrowsing.patch
