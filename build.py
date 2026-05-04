@@ -12,12 +12,10 @@
 ungoogled-chromium build script for Microsoft Windows
 """
 
-import asyncio
 import sys
 import time
 import argparse
 import os
-import re
 import shutil
 import subprocess
 import ctypes
@@ -151,22 +149,6 @@ def main():
     """CLI Entrypoint"""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        '--disable-ssl-verification',
-        action='store_true',
-        help='Disables SSL verification for downloading')
-    parser.add_argument(
-        '--7z-path',
-        dest='sevenz_path',
-        default=USE_REGISTRY,
-        help=('Command or path to 7-Zip\'s "7z" binary. If "_use_registry" is '
-              'specified, determine the path from the registry. Default: %(default)s'))
-    parser.add_argument(
-        '--winrar-path',
-        dest='winrar_path',
-        default=USE_REGISTRY,
-        help=('Command or path to WinRAR\'s "winrar.exe" binary. If "_use_registry" is '
-              'specified, determine the path from the registry. Default: %(default)s'))
-    parser.add_argument(
         '-j',
         type=int,
         dest='thread_count',
@@ -202,8 +184,8 @@ def main():
 
         # Extractors
         extractors = {
-            ExtractorEnum.SEVENZIP: args.sevenz_path,
-            ExtractorEnum.WINRAR: args.winrar_path,
+            ExtractorEnum.SEVENZIP: USE_REGISTRY,
+            ExtractorEnum.WINRAR: USE_REGISTRY,
         }
 
         # Prepare source folder
@@ -211,7 +193,7 @@ def main():
             # Download chromium tarball
             get_logger().info('Downloading chromium tarball...')
             download_info = downloads.DownloadInfo([_ROOT_DIR / 'helium-chromium' / 'downloads.ini'])
-            downloads.retrieve_downloads(download_info, downloads_cache, None, True, args.disable_ssl_verification)
+            downloads.retrieve_downloads(download_info, downloads_cache, None, True)
             try:
                 downloads.check_downloads(download_info, downloads_cache, None)
             except downloads.HashMismatchError as exc:
@@ -237,7 +219,7 @@ def main():
         # Retrieve windows downloads
         get_logger().info('Downloading required files...')
         download_info_win = downloads.DownloadInfo([_ROOT_DIR / 'downloads.ini'])
-        downloads.retrieve_downloads(download_info_win, downloads_cache, None, True, args.disable_ssl_verification)
+        downloads.retrieve_downloads(download_info_win, downloads_cache, None, True)
         try:
             downloads.check_downloads(download_info_win, downloads_cache, None)
         except downloads.HashMismatchError as exc:
@@ -247,7 +229,7 @@ def main():
         # Retrieve deps
         get_logger().info('Downloading deps...')
         deps_info = downloads.DownloadInfo([_ROOT_DIR / 'helium-chromium' / 'deps.ini'])
-        downloads.retrieve_downloads(deps_info, downloads_cache, None, True, args.disable_ssl_verification)
+        downloads.retrieve_downloads(deps_info, downloads_cache, None, True)
         try:
             downloads.check_downloads(deps_info, downloads_cache, None)
         except downloads.HashMismatchError as exc:
