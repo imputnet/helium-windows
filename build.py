@@ -115,6 +115,38 @@ def _make_tmp_paths():
         tmp_path.mkdir()
 
 
+def _run_chromium_hooks_with_local_vs(source_tree):
+    """Runs Chromium hooks."""
+    depot_tools = source_tree / 'uc_staging' / 'depot_tools'
+    gclient = depot_tools / 'gclient.bat'
+    gclient_file = source_tree / 'uc_staging' / '.gclient'
+    if not gclient.exists() or not gclient_file.exists():
+        raise RuntimeError('Cannot run gclient hooks: depot_tools checkout is incomplete')
+    gclient_config = gclient_file.read_text(encoding=ENCODING)
+    if "target_os = ['unix'];" not in gclient_config:
+        raise RuntimeError('Unexpected gclient target_os')
+    gclient_config = gclient_config.replace("target_os = ['unix'];", "target_os = ['win'];")
+    gclient_file.write_text(gclient_config, encoding=ENCODING)
+
+    cmd_input = ['call "%s" >nul' % _get_vcvars_path()]
+    cmd_input.extend([
+        'set DEPOT_TOOLS_WIN_TOOLCHAIN=0',
+        'set DEPOT_TOOLS_UPDATE=0',
+        'set VPYTHON_BYPASS=manually managed python not supported by chrome operations',
+        'set "GCLIENT_FILE=%s"' % gclient_file,
+        'set "PYTHONPATH=%s"' % depot_tools,
+        'set "PATH=%%PATH%%;%s"' % depot_tools,
+        '"%s" sync -f -D -R --no-history --nohooks' % gclient,
+        '"%s" runhooks' % gclient,
+        'exit\n',
+    ])
+    subprocess.run(('cmd.exe', '/k'),
+                   input='\n'.join(cmd_input),
+                   check=True,
+                   encoding=ENCODING,
+                   cwd=_ROOT_DIR)
+
+
 def main():
     """CLI Entrypoint"""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -191,7 +223,16 @@ def main():
             downloads.unpack_downloads(download_info, downloads_cache, None, source_tree, extractors)
         else:
             # Clone sources
-            subprocess.run([sys.executable, str(Path('helium-chromium', 'utils', 'clone.py')), '-o', 'build\\src', '-p', 'win-arm64' if args.arm else 'win64'], check=True)
+            subprocess.run([
+                sys.executable,
+                str(Path('helium-chromium', 'utils', 'clone.py')),
+                '-o',
+                'build\\src',
+                '-p',
+                'win-arm64' if args.arm else 'win64',
+            ],
+                check=True)
+            _run_chromium_hooks_with_local_vs(source_tree)
 
         # Retrieve windows downloads
         get_logger().info('Downloading required files...')
