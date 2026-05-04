@@ -1,16 +1,8 @@
-ungoogled-chromium/windows/windows-disable-reorder-fix-linking.patch
-ungoogled-chromium/windows/windows-disable-win-build-output.patch
-ungoogled-chromium/windows/windows-disable-rcpy.patch
 ungoogled-chromium/windows/windows-fix-building-gn.patch
-ungoogled-chromium/windows/windows-compile-mini-installer.patch
-ungoogled-chromium/windows/windows-no-unknown-warnings.patch
 ungoogled-chromium/windows/windows-disable-event-log.patch
 ungoogled-chromium/windows/windows-disable-rlz.patch
 ungoogled-chromium/windows/windows-disable-download-warning-prompt.patch
-ungoogled-chromium/windows/windows-fix-rc-terminating-error.patch
 ungoogled-chromium/windows/windows-fix-building-without-safebrowsing.patch
-ungoogled-chromium/windows/windows-fix-generate-resource-allowed-list.patch
-ungoogled-chromium/windows/windows-disable-clang-version-check.patch
 ungoogled-chromium/windows/windows-fix-licenses-gn-path.patch
 ungoogled-chromium/windows/windows-fix-building-with-rust.patch
 ungoogled-chromium/windows/windows-fix-remove-unused-preferences-fields.patch
