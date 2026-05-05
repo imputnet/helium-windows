@@ -122,6 +122,16 @@ def _remove_tree(path):
     shutil.rmtree(path, onerror=clear_readonly_and_retry)
 
 
+def _prepare_download_outputs(download_info, output_dir, components):
+    """Clears download output directories that replace Chromium checkouts."""
+    download_info.check_sections_exist(components)
+    for component in components:
+        output_path = output_dir / Path(download_info[component].output_path)
+        if output_path.exists():
+            _remove_tree(output_path)
+            output_path.mkdir()
+
+
 def _run_chromium_hooks_with_local_vs(source_tree):
     """Runs Chromium hooks."""
     depot_tools = source_tree / 'uc_staging' / 'depot_tools'
@@ -273,14 +283,8 @@ def main():
             parser.exit(1)
 
         # Unpack downloads
-        DIRECTX = source_tree / 'third_party' / 'microsoft_dxheaders' / 'src'
-        ESBUILD = source_tree / 'third_party' / 'devtools-frontend' / 'src' / 'third_party' / 'esbuild'
-        if DIRECTX.exists():
-            _remove_tree(DIRECTX)
-            DIRECTX.mkdir()
-        if ESBUILD.exists():
-            _remove_tree(ESBUILD)
-            ESBUILD.mkdir()
+        _prepare_download_outputs(download_info_win, source_tree,
+                                  ('directx-headers', 'esbuild', 'webauthn'))
         get_logger().info('Unpacking downloads...')
         downloads.unpack_downloads(download_info_win, downloads_cache, None, source_tree, extractors)
 
