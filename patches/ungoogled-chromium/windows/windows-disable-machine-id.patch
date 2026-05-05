@@ -1,0 +1,53 @@
+# Disable machine ID generation on Windows.
+# See https://github.com/Eloston/ungoogled-chromium/issues/444
+
+--- a/components/metrics/machine_id_provider_win.cc
++++ b/components/metrics/machine_id_provider_win.cc
+@@ -10,6 +10,7 @@
+ #include <winioctl.h>
+ 
+ #include "base/base_paths.h"
++#include "base/command_line.h"
+ #include "base/files/file_path.h"
+ #include "base/notreached.h"
+ #include "base/path_service.h"
+@@ -23,12 +24,19 @@ MachineIdProvider::MachineIdProvider() =
+ MachineIdProvider::~MachineIdProvider() = default;
+ 
+ bool MachineIdProvider::HasId() const {
++  if (base::CommandLine::ForCurrentProcess()->HasSwitch("disable-machine-id")) {
++    return false;
++  }
+   return true;
+ }
+ 
+ // On windows, the machine id is based on the serial number of the drive Chrome
+ // is running from.
+ std::string MachineIdProvider::GetMachineId() const {
++  if (base::CommandLine::ForCurrentProcess()->HasSwitch("disable-machine-id")) {
++    return std::string();
++  }
++
+   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                 base::BlockingType::MAY_BLOCK);
+ 
+--- a/services/preferences/tracked/device_id_win.cc
++++ b/services/preferences/tracked/device_id_win.cc
+@@ -10,12 +10,17 @@
+ 
+ #include <memory>
+ 
++#include "base/command_line.h"
+ #include "base/check.h"
+ #include "base/containers/heap_array.h"
+ 
+ MachineIdStatus GetDeterministicMachineSpecificId(std::string* machine_id) {
+   DCHECK(machine_id);
+ 
++  if (base::CommandLine::ForCurrentProcess()->HasSwitch("disable-machine-id")) {
++    return MachineIdStatus::NOT_IMPLEMENTED;
++  }
++
+   wchar_t computer_name[MAX_COMPUTERNAME_LENGTH + 1] = {};
+   DWORD computer_name_size = std::size(computer_name);
+ 
