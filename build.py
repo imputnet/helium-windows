@@ -117,14 +117,28 @@ def _run_chromium_hooks_with_local_vs(source_tree):
     """Runs Chromium hooks."""
     depot_tools = source_tree / 'uc_staging' / 'depot_tools'
     gclient = depot_tools / 'gclient.bat'
+    gclient_py = depot_tools / 'gclient.py'
     gclient_file = source_tree / 'uc_staging' / '.gclient'
-    if not gclient.exists() or not gclient_file.exists():
+    if not gclient.exists() or not gclient_py.exists() or not gclient_file.exists():
         raise RuntimeError('Cannot run gclient hooks: depot_tools checkout is incomplete')
+    hook_cwd = source_tree.parent
+    root_source_tree = str(source_tree.relative_to(_ROOT_DIR))
+    hook_source_tree = str(source_tree.relative_to(hook_cwd))
     gclient_config = gclient_file.read_text(encoding=ENCODING)
     if "target_os = ['unix'];" not in gclient_config:
         raise RuntimeError('Unexpected gclient target_os')
     gclient_config = gclient_config.replace("target_os = ['unix'];", "target_os = ['win'];")
+    if '"generate_location_tags"' not in gclient_config:
+        gclient_config = gclient_config.replace(
+            '"checkout_configuration": "small",',
+            '"checkout_configuration": "small",\n'
+            '      "generate_location_tags": False,')
+    gclient_py_config = gclient_py.read_text(encoding=ENCODING)
+    for path in (root_source_tree, root_source_tree.replace('\\', '\\\\')):
+        gclient_config = gclient_config.replace(path, hook_source_tree)
+        gclient_py_config = gclient_py_config.replace(path, hook_source_tree)
     gclient_file.write_text(gclient_config, encoding=ENCODING)
+    gclient_py.write_text(gclient_py_config, encoding=ENCODING)
 
     cmd_input = ['call "%s" >nul' % _get_vcvars_path()]
     cmd_input.extend([
@@ -142,7 +156,7 @@ def _run_chromium_hooks_with_local_vs(source_tree):
                    input='\n'.join(cmd_input),
                    check=True,
                    encoding=ENCODING,
-                   cwd=_ROOT_DIR)
+                   cwd=hook_cwd)
 
 
 def main():
