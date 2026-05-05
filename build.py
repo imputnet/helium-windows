@@ -113,6 +113,15 @@ def _make_tmp_paths():
         tmp_path.mkdir()
 
 
+def _remove_tree(path):
+    """Removes a directory tree, including read-only files on Windows."""
+    def clear_readonly_and_retry(function, failed_path, _exc_info):
+        os.chmod(failed_path, 0o700)
+        function(failed_path)
+
+    shutil.rmtree(path, onerror=clear_readonly_and_retry)
+
+
 def _run_chromium_hooks_with_local_vs(source_tree):
     """Runs Chromium hooks."""
     depot_tools = source_tree / 'uc_staging' / 'depot_tools'
@@ -267,10 +276,10 @@ def main():
         DIRECTX = source_tree / 'third_party' / 'microsoft_dxheaders' / 'src'
         ESBUILD = source_tree / 'third_party' / 'devtools-frontend' / 'src' / 'third_party' / 'esbuild'
         if DIRECTX.exists():
-            shutil.rmtree(DIRECTX)
+            _remove_tree(DIRECTX)
             DIRECTX.mkdir()
         if ESBUILD.exists():
-            shutil.rmtree(ESBUILD)
+            _remove_tree(ESBUILD)
             ESBUILD.mkdir()
         get_logger().info('Unpacking downloads...')
         downloads.unpack_downloads(download_info_win, downloads_cache, None, source_tree, extractors)
