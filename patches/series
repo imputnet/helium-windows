@@ -21,3 +21,13 @@ ungoogled-chromium/windows/windows-fix-remove-unused-preferences-fields.patch
 ungoogled-chromium/windows/windows-fix-missing-includes.patch
 
 helium/windows/change-branding.patch
+helium/windows/setup-chromium-version-migration.patch
+
+helium/windows/updater/winsparkle-drop-3rdparty-deps.patch
+helium/windows/updater/winsparkle-api-extensions.patch
+helium/windows/updater/winsparkle-headless-ui.patch
+helium/windows/updater/glue.patch
+helium/windows/updater/build-wiring.patch
+helium/windows/updater/register.patch
+helium/windows/updater/helper.patch
+helium/windows/updater/fixup-wrong-version.patch

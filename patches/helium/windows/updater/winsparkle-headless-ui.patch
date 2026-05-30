@@ -1,0 +1,133 @@
+--- /dev/null
++++ b/third_party/winsparkle/src/ui_headless.cpp
+@@ -0,0 +1,130 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++#include <windows.h>
++
++#include <shellapi.h>
++
++#include <memory>
++#include <string>
++
++#include "appcast.h"
++#include "appcontroller.h"
++#include "settings.h"
++#include "threads.h"
++#include "ui.h"
++#include "updatedownloader.h"
++#include "utils.h"
++#include "winsparkle.h"
++
++namespace winsparkle {
++
++HINSTANCE UI::ms_hInstance = nullptr;
++
++namespace {
++
++CriticalSection g_downloaderCS;
++std::unique_ptr<UpdateDownloader> g_downloader;
++
++// Terminate and destroy any outstanding downloader. MUST NOT be called
++// from the downloader's own thread
++// (i.e. not from NotifyUpdateDownloaded/NotifyUpdateError).
++void StopDownloader() {
++  std::unique_ptr<UpdateDownloader> downloader;
++  {
++    CriticalSectionLocker lock(g_downloaderCS);
++    downloader = std::move(g_downloader);
++  }
++
++  if (downloader) {
++    downloader->TerminateAndJoin();
++  }
++}
++
++bool LaunchInstaller(const std::wstring& updateFile,
++                     const std::string& installerArguments) {
++  std::wstring wArgs;
++
++  SHELLEXECUTEINFO sei = {};
++  sei.cbSize = sizeof(sei);
++  sei.lpFile = updateFile.c_str();
++  sei.nShow = SW_SHOWDEFAULT;
++  sei.fMask = SEE_MASK_FLAG_NO_UI;
++
++  if (!installerArguments.empty()) {
++    wArgs = AnsiToWide(installerArguments);
++    sei.lpParameters = wArgs.c_str();
++  }
++
++  return ::ShellExecuteEx(&sei) != FALSE;
++}
++
++}  // anonymous namespace
++
++// static
++void UI::ShutDown() {
++  StopDownloader();
++}
++
++// static
++void UI::NotifyNoUpdates(bool) {
++  ApplicationController::NotifyUpdateNotFound();
++}
++
++// static
++void UI::NotifyUpdateError(const std::string& message) {
++  ApplicationController::SetLastUpdateError(message);
++  ApplicationController::NotifyUpdateError();
++}
++
++// static
++void UI::NotifyUpdateAvailable(const Appcast& info, bool) {
++  ApplicationController::NotifyUpdateFound();
++
++  if (!info.HasDownload()) {
++    return;
++  }
++
++  StopDownloader();
++  CriticalSectionLocker lock(g_downloaderCS);
++  g_downloader = std::make_unique<UpdateDownloader>(info);
++  g_downloader->Start();
++}
++
++// static
++void UI::NotifyDownloadProgress(size_t downloaded, size_t total) {
++  ApplicationController::NotifyDownloadProgress(downloaded, total);
++}
++
++// Runs in the UpdateDownloader thread context after the payload has been
++// downloaded and its EdDSA signature verified.
++// static
++void UI::NotifyUpdateDownloaded(const std::wstring& updateFile,
++                                const Appcast& appcast) {
++  ApplicationController::SetPendingUpdateEdDsaSignature(
++      appcast.enclosure.EdDsaSignature);
++
++  switch (ApplicationController::UserRunInstallerCallback(updateFile.c_str())) {
++    case 1:
++      break;
++    case WINSPARKLE_RETURN_ERROR:
++      NotifyUpdateError("the installer callback reported a failure");
++      break;
++    case 0:
++    default:
++      if (LaunchInstaller(updateFile, appcast.enclosure.InstallerArguments)) {
++        ApplicationController::RequestShutdown();
++      } else {
++        NotifyUpdateError("failed to launch the downloaded installer");
++      }
++      break;
++  }
++}
++
++// static
++void UI::ShowCheckingUpdates() {}
++// static
++void UI::AskForPermission() {}
++
++}  // namespace winsparkle

@@ -1,0 +1,254 @@
+--- a/third_party/winsparkle/include/winsparkle.h
++++ b/third_party/winsparkle/include/winsparkle.h
+@@ -400,6 +400,35 @@ WIN_SPARKLE_API int __cdecl win_sparkle_
+ */
+ WIN_SPARKLE_API time_t __cdecl win_sparkle_get_last_check_time();
+ 
++/**
++    Returns the EdDSA signature (base64) of the update currently pending
++    installation -- the same payload passed to the user-run-installer callback.
++
++    @param buf      Buffer to receive the NUL-terminated base64 signature.
++    @param buf_len  Size of @a buf, in chars (including room for the NUL).
++
++    @return Number of characters written (excluding the NUL), or 0 if there is
++            no pending signature or @a buf is NULL / too small.
++ */
++WIN_SPARKLE_API size_t __cdecl win_sparkle_get_pending_update_eddsa_signature(
++    char* buf,
++    size_t buf_len);
++
++/**
++    Returns a human-readable description of the most recent update error (the
++    error callback itself carries no detail), e.g. "Update download failed:
++    Cannot save update file."
++
++    @param buf      Buffer to receive the NUL-terminated UTF-8 message.
++    @param buf_len  Size of @a buf, in chars (including room for the NUL).
++
++    @return Number of characters written (excluding the NUL), or 0 if there is
++            no message or @a buf is NULL / too small.
++ */
++WIN_SPARKLE_API size_t __cdecl win_sparkle_get_last_error_message(
++    char* buf,
++    size_t buf_len);
++
+ /// Callback type for win_sparkle_error_callback()
+ typedef void (__cdecl *win_sparkle_error_callback_t)();
+ 
+@@ -580,6 +609,15 @@ typedef int(__cdecl* win_sparkle_user_ru
+ */
+ WIN_SPARKLE_API void __cdecl win_sparkle_set_user_run_installer_callback(win_sparkle_user_run_installer_callback_t callback);
+ 
++/// Callback type for win_sparkle_set_download_progress_callback().
++/// @a downloaded and @a total are byte counts; @a total is 0 if unknown.
++typedef void(__cdecl* win_sparkle_download_progress_callback_t)(
++    size_t downloaded,
++    size_t total);
++
++WIN_SPARKLE_API void __cdecl win_sparkle_set_download_progress_callback(
++    win_sparkle_download_progress_callback_t callback);
++
+ //@}
+ 
+ 
+--- a/third_party/winsparkle/src/appcontroller.cpp
++++ b/third_party/winsparkle/src/appcontroller.cpp
+@@ -41,6 +41,11 @@ win_sparkle_update_skipped_callback_t
+ win_sparkle_update_postponed_callback_t    ApplicationController::ms_cbUpdatePostponed = NULL;
+ win_sparkle_update_dismissed_callback_t    ApplicationController::ms_cbUpdateDismissed = NULL;
+ win_sparkle_user_run_installer_callback_t  ApplicationController::ms_cbUserRunInstaller = NULL;
++win_sparkle_download_progress_callback_t   ApplicationController::ms_cbDownloadProgress = NULL;
++
++std::string ApplicationController::ms_pendingEdDsaSignature;
++
++std::string ApplicationController::ms_lastUpdateError;
+ 
+ bool ApplicationController::IsReadyToShutdown()
+ {
+@@ -164,4 +169,37 @@ int ApplicationController::UserRunInstal
+     return ms_cbUserRunInstaller(filePath);
+ }
+ 
++void ApplicationController::NotifyDownloadProgress(size_t downloaded,
++                                                   size_t total) {
++  win_sparkle_download_progress_callback_t cb = NULL;
++  {
++    CriticalSectionLocker lock(ms_csVars);
++    cb = ms_cbDownloadProgress;
++  }
++  if (cb) {
++    cb(downloaded, total);
++  }
++}
++
++void ApplicationController::SetPendingUpdateEdDsaSignature(
++    const std::string& signature) {
++  CriticalSectionLocker lock(ms_csVars);
++  ms_pendingEdDsaSignature = signature;
++}
++
++std::string ApplicationController::GetPendingUpdateEdDsaSignature() {
++  CriticalSectionLocker lock(ms_csVars);
++  return ms_pendingEdDsaSignature;
++}
++
++void ApplicationController::SetLastUpdateError(const std::string& message) {
++  CriticalSectionLocker lock(ms_csVars);
++  ms_lastUpdateError = message;
++}
++
++std::string ApplicationController::GetLastUpdateError() {
++  CriticalSectionLocker lock(ms_csVars);
++  return ms_lastUpdateError;
++}
++
+ } // namespace winsparkle
+--- a/third_party/winsparkle/src/appcontroller.h
++++ b/third_party/winsparkle/src/appcontroller.h
+@@ -29,6 +29,7 @@
+ #include "winsparkle.h"
+ #include "threads.h"
+ 
++#include <string>
+ 
+ namespace winsparkle
+ {
+@@ -81,6 +82,9 @@ public:
+     /// Run the user installer callback if one is set.
+     static int UserRunInstallerCallback(const wchar_t*);
+ 
++    /// Notify of update-download progress.
++    static void NotifyDownloadProgress(size_t downloaded, size_t total);
++
+     //@}
+ 
+     /**
+@@ -157,6 +161,25 @@ public:
+         ms_cbUserRunInstaller = callback;
+     }
+ 
++    static void SetDownloadProgressCallback(win_sparkle_download_progress_callback_t callback)
++    {
++        CriticalSectionLocker lock(ms_csVars);
++        ms_cbDownloadProgress = callback;
++    }
++
++    //@}
++
++    /**
++        Pending update metadata.
++     */
++    //@{
++
++    static void SetPendingUpdateEdDsaSignature(const std::string& signature);
++    static std::string GetPendingUpdateEdDsaSignature();
++
++    static void SetLastUpdateError(const std::string& message);
++    static std::string GetLastUpdateError();
++
+     //@}
+ 
+ private:
+@@ -175,7 +198,10 @@ private:
+     static win_sparkle_update_postponed_callback_t    ms_cbUpdatePostponed;
+     static win_sparkle_update_dismissed_callback_t    ms_cbUpdateDismissed;
+     static win_sparkle_user_run_installer_callback_t  ms_cbUserRunInstaller;
++    static win_sparkle_download_progress_callback_t   ms_cbDownloadProgress;
+     
++    static std::string ms_pendingEdDsaSignature;
++    static std::string ms_lastUpdateError;
+ };
+ 
+ } // namespace winsparkle
+--- a/third_party/winsparkle/src/dll_api.cpp
++++ b/third_party/winsparkle/src/dll_api.cpp
+@@ -299,6 +299,51 @@ WIN_SPARKLE_API time_t __cdecl win_spark
+     return DEFAULT_LAST_CHECK_TIME;
+ }
+ 
++WIN_SPARKLE_API size_t __cdecl win_sparkle_get_pending_update_eddsa_signature(
++    char* buf,
++    size_t buf_len) {
++  if (buf == NULL) {
++    return 0;
++  }
++
++  try {
++    const std::string sig =
++        ApplicationController::GetPendingUpdateEdDsaSignature();
++    if (sig.empty() || buf_len <= sig.size()) {
++      return 0;
++    }
++
++    sig.copy(buf, sig.size());
++    buf[sig.size()] = '\0';
++    return sig.size();
++  }
++  CATCH_ALL_EXCEPTIONS
++
++  return 0;
++}
++
++WIN_SPARKLE_API size_t __cdecl win_sparkle_get_last_error_message(
++    char* buf,
++    size_t buf_len) {
++  if (buf == NULL) {
++    return 0;
++  }
++
++  try {
++    const std::string msg = ApplicationController::GetLastUpdateError();
++    if (msg.empty() || buf_len <= msg.size()) {
++      return 0;
++    }
++
++    msg.copy(buf, msg.size());
++    buf[msg.size()] = '\0';
++    return msg.size();
++  }
++  CATCH_ALL_EXCEPTIONS
++
++  return 0;
++}
++
+ WIN_SPARKLE_API void __cdecl win_sparkle_set_error_callback(win_sparkle_error_callback_t callback)
+ {
+     try
+@@ -429,5 +474,13 @@ WIN_SPARKLE_API void __cdecl win_sparkle
+     ApplicationController::SetUserRunInstallerCallback(callback);
+ }
+ 
++WIN_SPARKLE_API void __cdecl win_sparkle_set_download_progress_callback(
++    win_sparkle_download_progress_callback_t callback) {
++  try {
++    ApplicationController::SetDownloadProgressCallback(callback);
++  }
++  CATCH_ALL_EXCEPTIONS
++}
++
+ 
+ } // extern "C"
+--- a/third_party/winsparkle/src/updatedownloader.cpp
++++ b/third_party/winsparkle/src/updatedownloader.cpp
+@@ -199,12 +199,18 @@ void UpdateDownloader::Run()
+     catch (BadSignatureException&)
+     {
+         CleanLeftovers();  // remove potentially corrupted file
+-        UI::NotifyUpdateError(Err_BadSignature);
++        UI::NotifyUpdateError("Update signature verification failed.");
++        throw;
++    }
++    catch ( const std::exception& e )
++    {
++        UI::NotifyUpdateError(std::string("Update download failed: ") +
++                              e.what());
+         throw;
+     }
+     catch ( ... )
+     {
+-        UI::NotifyUpdateError();
++        UI::NotifyUpdateError("Update download failed with an unknown error.");
+         throw;
+     }
+ }

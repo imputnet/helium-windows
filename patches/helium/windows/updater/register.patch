@@ -1,0 +1,70 @@
+--- a/chrome/browser/chrome_browser_main_win.cc
++++ b/chrome/browser/chrome_browser_main_win.cc
+@@ -135,6 +135,10 @@
+ #include "chrome/browser/platform_experience/installer/installer_win.h"
+ #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ 
++#if BUILDFLAG(ENABLE_WINSPARKLE)
++#include "chrome/browser/win/winsparkle_glue.h"
++#endif  // BUILDFLAG(ENABLE_WINSPARKLE)
++
+ namespace {
+ 
+ typedef HRESULT (STDAPICALLTYPE* RegisterApplicationRestartProc)(
+@@ -640,6 +644,10 @@ void ChromeBrowserMainPartsWin::PostProf
+   if (!is_initial_profile)
+     return;
+ 
++#if BUILDFLAG(ENABLE_WINSPARKLE)
++  helium::InitializeWinSparkle(profile);
++#endif
++
+   // If Chrome was launched by a Progressive Web App launcher that needs to be
+   // updated, update all launchers for this profile.
+   if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kAppId) &&
+--- a/chrome/browser/lifetime/application_lifetime_desktop.cc
++++ b/chrome/browser/lifetime/application_lifetime_desktop.cc
+@@ -17,6 +17,7 @@
+ #include "chrome/browser/background/glic/glic_background_mode_manager.h"
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/browser_process_platform_part.h"
++#include "chrome/browser/buildflags.h"
+ #include "chrome/browser/download/download_core_service.h"
+ #include "chrome/browser/lifetime/application_lifetime.h"
+ #include "chrome/browser/lifetime/browser_close_manager.h"
+@@ -50,6 +51,10 @@
+ #include "base/win/win_util.h"
+ #endif  // BUILDFLAG(IS_WIN)
+ 
++#if BUILDFLAG(ENABLE_WINSPARKLE)
++#include "chrome/browser/win/winsparkle_glue.h"
++#endif  // BUILDFLAG(ENABLE_WINSPARKLE)
++
+ #if BUILDFLAG(ENABLE_SESSION_SERVICE)
+ #include "chrome/browser/sessions/session_data_service.h"
+ #include "chrome/browser/sessions/session_data_service_factory.h"
+@@ -109,9 +114,21 @@ void AttemptRestartInternal(IgnoreUnload
+   content::GetUIThreadTaskRunner({})->PostTask(
+       FROM_HERE, base::BindOnce(&ExitIgnoreUnloadHandlers));
+ #else   // !BUILDFLAG(IS_CHROMEOS).
+-
+-  pref_service->SetBoolean(prefs::kRestartLastSessionOnShutdown, true);
+-
++  // Set the flag to restore state after the restart.
++  bool self_relaunch = true;
++#if BUILDFLAG(ENABLE_WINSPARKLE)
++  // If a system-level update is downloaded and waiting, we raise a
++  // UAC prompt when the user clicks Relaunch, and hand off to the
++  // elevated apply helper, which waits for this process to exit,
++  // and relaunches the browser itself. In that case we do not want
++  // the normal self-relaunch.
++  if (helium::MaybeElevateSystemUpdateOnRelaunch()) {
++    self_relaunch = false;
++  }
++#endif
++  if (self_relaunch) {
++    pref_service->SetBoolean(prefs::kRestartLastSessionOnShutdown, true);
++  }
+   if (ignore_unload_handlers) {
+     ExitIgnoreUnloadHandlers();
+   } else {

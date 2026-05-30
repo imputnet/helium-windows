@@ -1,0 +1,20 @@
+--- a/chrome/installer/setup/setup_main.cc
++++ b/chrome/installer/setup/setup_main.cc
+@@ -1235,7 +1235,17 @@ InstallStatus InstallProductsHelper(Inst
+     if (!IsDowngradeAllowed(prefs)) {
+       const ProductState* product_state =
+           original_state.GetProductState(system_install);
++      // We used to ship with the versions still using the Chromium versioning,
++      // which breaks updates if we e.g. release an update while still on the same
++      // Chromium base. We migrated off those, but now we need a temporary workaround
++      // because otherwise users updating from "148".x to 0.x.x.x will always hit
++      // that a "higher version of chrome" is already installed.
++      const bool is_helium_version_migration =
++          product_state && product_state->version().components()[0] > 100 &&
++          installer_version->components()[0] == 0;
++
+       if (product_state != nullptr &&
++          !is_helium_version_migration &&
+           (product_state->version().CompareTo(*installer_version) > 0)) {
+         LOG(ERROR) << "Higher version of Chrome is already installed.";
+         int message_id = IDS_INSTALL_HIGHER_VERSION_BASE;
