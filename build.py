@@ -356,7 +356,7 @@ def main():
         ninja_commandline.append('setup')
 
     if not args.ci or args.build_installer:
-        ninja_commandline.append('mini_installer_archive')
+        ninja_commandline.append('mini_installer')
 
     # Run ninja
     if args.ci:
