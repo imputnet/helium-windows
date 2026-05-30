@@ -19,6 +19,10 @@ on:
         description: 'Create a release after build is done'
         default: false
 
+env:
+  WINSPARKLE_ED_KEY: ${{ vars.WINSPARKLE_ED_KEY }}
+  WINSPARKLE_AUTHENTICODE_ORG: ${{ vars.WINSPARKLE_AUTHENTICODE_ORG }}
+
 jobs:
   build-1:
     runs-on: ${{ github.event.inputs.runner }}

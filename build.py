@@ -328,6 +328,13 @@ def main():
         else:
             gn_flags += 'is_official_build=true\n'
 
+        winsparkle_ed_key = os.environ.get('WINSPARKLE_ED_KEY', '')
+        authenticode_org = os.environ.get('WINSPARKLE_AUTHENTICODE_ORG', '')
+        if winsparkle_ed_key and authenticode_org:
+            gn_flags += 'enable_winsparkle=true\n'
+            gn_flags += f'winsparkle_ed_key="{winsparkle_ed_key}"\n'
+            gn_flags += f'winsparkle_authenticode_org="{authenticode_org}"\n'
+
         (source_tree / 'out/Default/args.gn').write_text(gn_flags, encoding=ENCODING)
 
     # Enter source tree to run build commands
