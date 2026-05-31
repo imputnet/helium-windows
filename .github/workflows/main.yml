@@ -434,6 +434,20 @@ jobs:
           description: Helium
           description-url: https://github.com/imputnet/helium-windows
 
+      # we want a different description here, so sign it separately again
+      - name: Sign Helium update helper
+        uses: azure/artifact-signing-action@v1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
+          files: C:\helium-windows\build\src\out\Default\helium_update_helper.exe
+          description: Helium Update Helper
+          description-url: https://github.com/imputnet/helium-windows
+
       - name: Build Helium installer and package
         id: stage2
         uses: ./.github/actions/stage
@@ -889,6 +903,20 @@ jobs:
           certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
           files: ${{ steps.stage.outputs.files-to-sign }}
           description: Helium
+          description-url: https://github.com/imputnet/helium-windows
+
+      # we want a different description here, so sign it separately again
+      - name: Sign Helium update helper
+        uses: azure/artifact-signing-action@v1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
+          files: C:\helium-windows\build\src\out\Default\helium_update_helper.exe
+          description: Helium Update Helper
           description-url: https://github.com/imputnet/helium-windows
 
       - name: Build Helium installer and package
