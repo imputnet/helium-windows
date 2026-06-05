@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/chrome/browser/win/winsparkle_glue.cc
-@@ -0,0 +1,506 @@
+@@ -0,0 +1,547 @@
 +// Copyright 2026 The Helium Authors
 +// You can use, redistribute, and/or modify this source code under
 +// the terms of the GPL-3.0 license that can be found in the LICENSE file.
@@ -20,6 +20,7 @@
 +#include "base/callback_list.h"
 +#include "base/command_line.h"
 +#include "base/files/file_path.h"
++#include "base/files/file_util.h"
 +#include "base/functional/bind.h"
 +#include "base/location.h"
 +#include "base/logging.h"
@@ -28,9 +29,12 @@
 +#include "base/no_destructor.h"
 +#include "base/path_service.h"
 +#include "base/process/launch.h"
++#include "base/process/process.h"
 +#include "base/scoped_observation.h"
 +#include "base/strings/string_number_conversions.h"
 +#include "base/strings/utf_string_conversions.h"
++#include "base/task/thread_pool.h"
++#include "base/time/time.h"
 +#include "base/version_info/version_info.h"
 +#include "chrome/browser/browser_process.h"
 +#include "chrome/browser/buildflags.h"
@@ -39,6 +43,7 @@
 +#include "chrome/browser/profiles/profile_manager_observer.h"
 +#include "chrome/browser/profiles/profile_observer.h"
 +#include "chrome/browser/ui/webui/help/version_updater.h"
++#include "chrome/common/chrome_paths.h"
 +#include "chrome/grit/generated_resources.h"
 +#include "chrome/install_static/install_util.h"
 +#include "chrome/installer/util/util_constants.h"
@@ -75,6 +80,37 @@
 +  const base::FilePath new_exe = dir.Append(installer::kChromeNewExe);
 +  return ::GetFileAttributesW(new_exe.value().c_str()) !=
 +         INVALID_FILE_ATTRIBUTES;
++}
++
++base::FilePath SystemUpdateMarkerPath() {
++  base::FilePath dir;
++  if (!base::PathService::Get(chrome::DIR_USER_DATA, &dir)) {
++    return base::FilePath();
++  }
++  return dir.Append(FILE_PATH_LITERAL("PendingSystemUpdate"));
++}
++
++std::string SessionToken() {
++  return base::NumberToString(base::Process::Current()
++                                  .CreationTime()
++                                  .ToDeltaSinceWindowsEpoch()
++                                  .InMicroseconds());
++}
++
++void MarkSystemUpdatePending() {
++  const base::FilePath path = SystemUpdateMarkerPath();
++  if (!path.empty()) {
++    base::WriteFile(path, SessionToken());
++  }
++}
++
++void ClearStaleSystemUpdateMarker() {
++  const base::FilePath path = SystemUpdateMarkerPath();
++  std::string token;
++  if (!path.empty() && base::ReadFileToString(path, &token) &&
++      token != SessionToken()) {
++    base::DeleteFile(path);
++  }
 +}
 +
 +bool RunPerUserInstallerWait(const std::wstring& installer_path) {
@@ -184,6 +220,8 @@
 +    // the verified payload and apply it only when the user clicks Relaunch.
 +    char sig[256] = {};
 +    win_sparkle_get_pending_update_eddsa_signature(sig, sizeof(sig));
++    // Drop the marker the update chip polls for.
++    MarkSystemUpdatePending();
 +    content::GetUIThreadTaskRunner({})->PostTask(
 +        FROM_HERE,
 +        base::BindOnce(&StorePendingSystemUpdate, std::wstring(file_path),
@@ -230,6 +268,9 @@
 +      return;
 +    }
 +    started_ = true;
++    base::ThreadPool::PostTask(
++        FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
++        base::BindOnce(&ClearStaleSystemUpdateMarker));
 +    if (ProfileManager* manager = GetProfileManager()) {
 +      profile_manager_observation_.Observe(manager);
 +    }

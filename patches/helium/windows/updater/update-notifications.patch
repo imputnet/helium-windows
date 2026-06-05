@@ -1,6 +1,6 @@
 --- a/chrome/browser/upgrade_detector/get_installed_version_win.cc
 +++ b/chrome/browser/upgrade_detector/get_installed_version_win.cc
-@@ -11,10 +11,51 @@
+@@ -11,10 +11,77 @@
  #include "base/location.h"
  #include "base/task/task_traits.h"
  #include "base/task/thread_pool.h"
@@ -9,13 +9,19 @@
 +#if BUILDFLAG(ENABLE_WINSPARKLE)
 +#include <windows.h>
 +
++#include <string>
 +#include <vector>
 +
 +#include "base/base_paths.h"
 +#include "base/files/file_path.h"
++#include "base/files/file_util.h"
 +#include "base/path_service.h"
++#include "base/process/process.h"
++#include "base/strings/string_number_conversions.h"
++#include "base/time/time.h"
 +#include "base/version.h"
 +#include "base/version_info/version_info.h"
++#include "chrome/common/chrome_paths.h"
 +#include "chrome/installer/util/util_constants.h"
 +#else
  #include "chrome/installer/util/install_util.h"
@@ -37,9 +43,29 @@
 +         INVALID_FILE_ATTRIBUTES;
 +}
 +
++// System installs can't stage without elevation, so the glue drops a
++// marker holding the process's creation time, so any prior sessions
++// are ignored, and quit-without-relaunch doesn't leave a stale chip.
++bool HasPendingSystemUpdate() {
++  base::FilePath user_data;
++  if (!base::PathService::Get(chrome::DIR_USER_DATA, &user_data)) {
++    return false;
++  }
++  std::string token;
++  if (!base::ReadFileToString(
++          user_data.Append(FILE_PATH_LITERAL("PendingSystemUpdate")), &token)) {
++    return false;
++  }
++  return token == base::NumberToString(base::Process::Current()
++                                           .CreationTime()
++                                           .ToDeltaSinceWindowsEpoch()
++                                           .InMicroseconds());
++}
++
 +InstalledAndCriticalVersion GetInstalledVersionSynchronous() {
 +  base::Version running = version_info::GetVersion();
-+  if (HasPendingUpdateSwap() && running.IsValid()) {
++  if ((HasPendingUpdateSwap() || HasPendingSystemUpdate()) &&
++      running.IsValid()) {
 +    std::vector<uint32_t> components = running.components();
 +    components.back() += 1;
 +    return InstalledAndCriticalVersion(base::Version(std::move(components)));
@@ -52,7 +78,7 @@
  InstalledAndCriticalVersion GetInstalledVersionSynchronous() {
    base::Version installed_version =
        InstallUtil::GetChromeVersion(!InstallUtil::IsPerUserInstall());
-@@ -28,6 +69,8 @@ InstalledAndCriticalVersion GetInstalled
+@@ -28,6 +95,8 @@ InstalledAndCriticalVersion GetInstalled
    return InstalledAndCriticalVersion(std::move(installed_version));
  }
  
@@ -61,21 +87,3 @@
  }  // namespace
  
  void GetInstalledVersion(InstalledVersionCallback callback) {
---- a/chrome/installer/setup/last_breaking_installer_version.cc
-+++ b/chrome/installer/setup/last_breaking_installer_version.cc
-@@ -11,12 +11,8 @@ namespace installer {
- // When updating the documentation, keep a history of maximum 3 milestones prior
- // the current version because downgrades are supported for 3 milestones.
- //
--// Breaking changes from 85.0.4169.0:
--//  Change: Default installation directory for fresh 64 bits browsers moved from
--//    base::DIR_PROGRAM_FILESX86 to DIR_PROGRAM_FILES.
--//  Reason for being breaking: Downgrading to previous version will result in
--//    stale data in DIR_PROGRAM_FILES since the previous installers do not know
--//    if there is Chrome data at this location.
--const wchar_t kLastBreakingInstallerVersion[] = L"85.0.4169.0";
-+// Helium uses its own version scheme, which is below every Chromium
-+// "breaking installer version".
-+const wchar_t kLastBreakingInstallerVersion[] = L"0.0.0.0";
- 
- }  // namespace installer
