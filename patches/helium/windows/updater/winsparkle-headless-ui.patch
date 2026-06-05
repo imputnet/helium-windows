@@ -1,3 +1,104 @@
+--- a/third_party/winsparkle/src/download.cpp
++++ b/third_party/winsparkle/src/download.cpp
+@@ -184,6 +184,18 @@ void WaitUntilSignaledWithTerminationChe
+     }
+ }
+ 
++std::runtime_error MakeInetError(const char *ctx, DWORD code)
++{
++    char detail[512] = {};
++    ::FormatMessageA(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_FROM_SYSTEM |
++                         FORMAT_MESSAGE_IGNORE_INSERTS |
++                         FORMAT_MESSAGE_MAX_WIDTH_MASK,
++                     ::GetModuleHandleW(L"wininet.dll"), code, 0, detail,
++                     sizeof(detail), NULL);
++    return std::runtime_error(std::string(ctx) + " (WinINet error " +
++                              std::to_string(code) + "): " + detail);
++}
++
+ } // anonymous namespace
+ 
+ 
+@@ -202,7 +214,7 @@ void DownloadFile(const std::string& url
+     urlc.dwUrlPathLength = sizeof(url_path);
+ 
+     if ( !InternetCrackUrlA(url.c_str(), 0, ICU_DECODE, &urlc) )
+-        throw Win32Exception();
++        throw Win32Exception("InternetCrackUrl");
+ 
+     InetHandle inet = InternetOpen
+                       (
+@@ -213,7 +225,7 @@ void DownloadFile(const std::string& url
+                           INTERNET_FLAG_ASYNC // dwFlags
+                       );
+     if ( !inet )
+-        throw Win32Exception();
++        throw Win32Exception("InternetOpen");
+ 
+     DWORD dwOption = HTTP_PROTOCOL_FLAG_HTTP2;
+     InternetSetOptionW(inet, INTERNET_OPTION_ENABLE_HTTP_PROTOCOL, &dwOption, sizeof(dwOption));
+@@ -260,11 +272,14 @@ void DownloadFile(const std::string& url
+     else
+     {
+         if (GetLastError() != ERROR_IO_PENDING)
+-            throw Win32Exception();
++            throw Win32Exception("InternetOpenUrl");
+     }
+ 
+     WaitUntilSignaledWithTerminationCheck(context.eventRequestComplete, onThread);
+ 
++    if (context.lastError != ERROR_SUCCESS)
++        throw MakeInetError("update request failed", context.lastError);
++
+     // Check returned status code - we need to detect 404 instead of
+     // downloading the human-readable 404 page:
+     DWORD statusCode;
+@@ -343,7 +358,7 @@ void DownloadFile(const std::string& url
+         if (!InternetReadFileEx(conn, &ibuf, IRF_ASYNC | IRF_NO_WAIT, NULL))
+         {
+             if (GetLastError() != ERROR_IO_PENDING)
+-                throw Win32Exception();
++                throw Win32Exception("InternetReadFileEx");
+ 
+             WaitUntilSignaledWithTerminationCheck(context.eventRequestComplete, onThread);
+             continue;
+@@ -352,7 +367,7 @@ void DownloadFile(const std::string& url
+         if (ibuf.dwBufferLength == 0)
+         {
+             if (context.lastError != ERROR_SUCCESS)
+-                throw Win32Exception();
++                throw MakeInetError("download read failed", context.lastError);
+             else
+                 break; // all of the file was downloaded
+         }
+--- a/third_party/winsparkle/src/ui.h
++++ b/third_party/winsparkle/src/ui.h
+@@ -29,14 +29,10 @@
+ #include "threads.h"
+ #include "appcast.h"
+ 
+-namespace winsparkle
+-{
++#include <string>
+ 
+-enum ErrorCode
++namespace winsparkle
+ {
+-    Err_Generic,
+-    Err_BadSignature
+-};
+ 
+ /**
+     The main UI thread.
+@@ -75,7 +71,7 @@ public:
+         (i.e. the user is manually checking for updates), "update error"
+         message is shown. Otherwise, does nothing.
+      */
+-    static void NotifyUpdateError(ErrorCode err = Err_Generic);
++    static void NotifyUpdateError(const std::string& message = std::string());
+ 
+     /**
+         Notifies the UI that a new version is available.
 --- /dev/null
 +++ b/third_party/winsparkle/src/ui_headless.cpp
 @@ -0,0 +1,130 @@

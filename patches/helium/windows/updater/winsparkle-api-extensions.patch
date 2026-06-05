@@ -229,6 +229,24 @@
 +
  
  } // extern "C"
+--- a/third_party/winsparkle/src/updatechecker.cpp
++++ b/third_party/winsparkle/src/updatechecker.cpp
+@@ -275,9 +275,14 @@ void UpdateChecker::PerformUpdateCheck()
+ 
+         UI::NotifyUpdateAvailable(appcast, ShouldAutomaticallyInstall());
+     }
++    catch ( const std::exception& e )
++    {
++        UI::NotifyUpdateError(std::string("Update check failed: ") + e.what());
++        throw;
++    }
+     catch ( ... )
+     {
+-        UI::NotifyUpdateError();
++        UI::NotifyUpdateError("Update check failed with an unknown error.");
+         throw;
+     }
+ }
 --- a/third_party/winsparkle/src/updatedownloader.cpp
 +++ b/third_party/winsparkle/src/updatedownloader.cpp
 @@ -199,12 +199,18 @@ void UpdateDownloader::Run()
