@@ -93,6 +93,17 @@
  #endif
    static const wchar_t kMetricsReportingEnabled[] = L"MetricsReportingEnabled";
  
+--- a/components/policy/tools/generate_policy_source.py
++++ b/components/policy/tools/generate_policy_source.py
+@@ -28,7 +28,7 @@ from xml.sax.saxutils import escape as x
+ 
+ CHROME_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Google\\\\Chrome'
+ CHROME_FOR_TESTING_POLICY_KEY = CHROME_POLICY_KEY + ' for Testing'
+-CHROMIUM_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Chromium'
++CHROMIUM_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Helium'
+ PLATFORM_STRINGS = {
+     'chrome_frame': ['win'],
+     'chrome_os': ['chrome_os'],
 --- a/chrome/installer/setup/setup_constants.cc
 +++ b/chrome/installer/setup/setup_constants.cc
 @@ -7,14 +7,14 @@
@@ -135,7 +146,7 @@
  CHROME_PATCH_FILE_SUFFIX = "_patch"  # prefixed by options.output_name
  
  # compressed full archive suffix, will be prefixed by options.output_name
-@@ -724,7 +718,7 @@ def _ParseOptions():
+@@ -724,7 +724,7 @@ def _ParseOptions():
          '{BSDIFF|ZUCCHINI}.')
      parser.add_option('-n',
                        '--output_name',
@@ -144,17 +155,6 @@
                        help='Name used to prefix names of generated archives.')
      parser.add_option('--enable_hidpi',
                        default='0',
---- a/components/policy/tools/generate_policy_source.py
-+++ b/components/policy/tools/generate_policy_source.py
-@@ -28,7 +28,7 @@ from xml.sax.saxutils import escape as x
- 
- CHROME_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Google\\\\Chrome'
- CHROME_FOR_TESTING_POLICY_KEY = CHROME_POLICY_KEY + ' for Testing'
--CHROMIUM_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Chromium'
-+CHROMIUM_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Helium'
- PLATFORM_STRINGS = {
-     'chrome_frame': ['win'],
-     'chrome_os': ['chrome_os'],
 --- a/components/policy/tools/template_writers/writer_configuration.py
 +++ b/components/policy/tools/template_writers/writer_configuration.py
 @@ -27,21 +27,21 @@ def GetConfigurationForBuild(defines):

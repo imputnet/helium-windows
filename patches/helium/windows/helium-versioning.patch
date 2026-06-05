@@ -68,7 +68,7 @@
  </assembly>
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
-@@ -1301,7 +1301,7 @@ base::FilePath GetModulePath(std::wstrin
+@@ -1292,7 +1292,7 @@ base::FilePath GetModulePath(std::wstrin
    // executable's directory and return the path if it can be read. This is the
    // expected location of modules for proper installs.
    const base::FilePath module_path =
@@ -160,7 +160,7 @@
  #include "base/win/registry.h"
  #include "base/win/security_util.h"
  #include "base/win/sid.h"
-@@ -579,10 +580,11 @@ void AddUninstallShortcutWorkItems(const
+@@ -583,10 +584,11 @@ void AddUninstallShortcutWorkItems(const
                                           InstallUtil::GetPublisherName(), true);
      install_list->AddSetRegValueWorkItem(
          reg_root, uninstall_reg, KEY_WOW64_32KEY, L"Version",
@@ -176,7 +176,7 @@
      install_list->AddSetRegValueWorkItem(reg_root, uninstall_reg,
 --- a/chrome/installer/setup/setup_main.cc
 +++ b/chrome/installer/setup/setup_main.cc
-@@ -478,7 +478,7 @@ installer::InstallStatus RenameChromeExe
+@@ -543,7 +543,7 @@ installer::InstallStatus RenameChromeExe
                                      WorkItem::MoveTreeOptions{});
  
    AddFinalizeUpdateWorkItems(original_state,

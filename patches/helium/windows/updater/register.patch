@@ -43,14 +43,11 @@
  #if BUILDFLAG(ENABLE_SESSION_SERVICE)
  #include "chrome/browser/sessions/session_data_service.h"
  #include "chrome/browser/sessions/session_data_service_factory.h"
-@@ -109,9 +114,21 @@ void AttemptRestartInternal(IgnoreUnload
-   content::GetUIThreadTaskRunner({})->PostTask(
+@@ -113,7 +118,21 @@ void AttemptRestartInternal(IgnoreUnload
        FROM_HERE, base::BindOnce(&ExitIgnoreUnloadHandlers));
  #else   // !BUILDFLAG(IS_CHROMEOS).
--
+   // Set the flag to restore state after the restart.
 -  pref_service->SetBoolean(prefs::kRestartLastSessionOnShutdown, true);
--
-+  // Set the flag to restore state after the restart.
 +  bool self_relaunch = true;
 +#if BUILDFLAG(ENABLE_WINSPARKLE)
 +  // If a system-level update is downloaded and waiting, we raise a
@@ -65,6 +62,7 @@
 +  if (self_relaunch) {
 +    pref_service->SetBoolean(prefs::kRestartLastSessionOnShutdown, true);
 +  }
++
    if (ignore_unload_handlers) {
      ExitIgnoreUnloadHandlers();
    } else {

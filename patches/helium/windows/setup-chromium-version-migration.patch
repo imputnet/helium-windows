@@ -24,7 +24,7 @@
                << current_version;
 --- a/chrome/installer/setup/setup_main.cc
 +++ b/chrome/installer/setup/setup_main.cc
-@@ -1235,7 +1235,17 @@ InstallStatus InstallProductsHelper(Inst
+@@ -1308,7 +1308,17 @@ InstallStatus InstallProductsHelper(Inst
      if (!IsDowngradeAllowed(prefs)) {
        const ProductState* product_state =
            original_state.GetProductState(system_install);

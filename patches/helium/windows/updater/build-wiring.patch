@@ -1,6 +1,6 @@
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -57,6 +57,7 @@ if (is_android) {
+@@ -54,6 +54,7 @@ if (is_android) {
  
  if (is_win) {
    import("//build/config/win/manifest.gni")
@@ -8,7 +8,7 @@
  }
  
  assert(!is_fuchsia, "Fuchsia shouldn't use anything in //chrome")
-@@ -103,6 +104,13 @@ buildflag_header("buildflags") {
+@@ -100,6 +101,13 @@ buildflag_header("buildflags") {
  
    if (is_win) {
      flags += [ "ENABLE_SEGMENT_HEAP=$enable_segment_heap" ]
@@ -22,7 +22,7 @@
    }
  
    # Android and ChromeOS don't support multiple browser processes, so they don't
-@@ -5834,6 +5842,17 @@ static_library("browser") {
+@@ -4069,6 +4077,17 @@ static_library("browser") {
    }
  
    if (is_win) {
@@ -72,7 +72,7 @@
  generate_allowlist_from_histograms_file("webui_name_variants") {
    namespace = "views_metrics"
    input_xml_file = "//tools/metrics/histograms/metadata/page/histograms.xml"
-@@ -3527,7 +3531,7 @@ static_library("ui") {
+@@ -3619,7 +3623,7 @@ static_library("ui") {
          "//chrome/browser/win/installer_downloader:prefs",
          "//chrome/updater/app/server/win:updater_legacy_idl",
        ]
