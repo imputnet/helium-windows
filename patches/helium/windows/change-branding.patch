@@ -71,6 +71,17 @@
          .tracing_service_clsid = {0x83f69367,
                                    0x442d,
                                    0x447f,
+--- a/chrome/installer/mini_installer/mini_installer_constants.cc
++++ b/chrome/installer/mini_installer/mini_installer_constants.cc
+@@ -12,7 +12,7 @@ namespace mini_installer {
+ // The target name of the installer extracted from resources.
+ const wchar_t kSetupExe[] = L"setup.exe";
+ // The prefix of the chrome archive resource.
+-const wchar_t kChromeArchivePrefix[] = L"chrome";
++const wchar_t kChromeArchivePrefix[] = L"helium";
+ // The prefix of the installer resource.
+ const wchar_t kSetupPrefix[] = L"setup";
+ 
 --- a/chrome/installer/setup/installer_crash_reporter_client.cc
 +++ b/chrome/installer/setup/installer_crash_reporter_client.cc
 @@ -103,7 +103,7 @@ bool InstallerCrashReporterClient::Repor
@@ -173,37 +184,3 @@
                  },
                  'namespace': 'Chromium.Policies.Chromium',
              },
---- a/chrome/installer/setup/BUILD.gn
-+++ b/chrome/installer/setup/BUILD.gn
-@@ -114,6 +114,7 @@ if (is_win) {
-       "//components/crash/core/common",
-       "//components/metrics:client_info",
-       "//components/metrics:metrics_pref_names",
-+      "//base/version_info",
-       "//components/version_info:channel",
-       "//third_party/crashpad/crashpad/client",
-       "//third_party/crashpad/crashpad/util",
---- a/chrome/installer/setup/install_worker.cc
-+++ b/chrome/installer/setup/install_worker.cc
-@@ -34,6 +34,7 @@
- #include "base/strings/utf_string_conversions.h"
- #include "base/version.h"
- #include "base/version_info/channel.h"
-+#include "base/version_info/version_info.h"
- #include "base/win/registry.h"
- #include "base/win/security_util.h"
- #include "base/win/sid.h"
-@@ -579,10 +580,11 @@ void AddUninstallShortcutWorkItems(const
-                                          InstallUtil::GetPublisherName(), true);
-     install_list->AddSetRegValueWorkItem(
-         reg_root, uninstall_reg, KEY_WOW64_32KEY, L"Version",
--        ASCIIToWide(new_version.GetString()), true);
-+        ASCIIToWide(version_info::GetHeliumVersionNumber()), true);
-     install_list->AddSetRegValueWorkItem(
-         reg_root, uninstall_reg, KEY_WOW64_32KEY, L"DisplayVersion",
--        ASCIIToWide(new_version.GetString()), true);
-+        ASCIIToWide(version_info::GetHeliumVersionNumber()),
-+        true);
-     // TODO(wfh): Ensure that this value is preserved in the 64-bit hive when
-     // 64-bit installs place the uninstall information into the 64-bit registry.
-     install_list->AddSetRegValueWorkItem(reg_root, uninstall_reg,

@@ -1,0 +1,89 @@
+--- a/chrome/browser/upgrade_detector/get_installed_version_win.cc
++++ b/chrome/browser/upgrade_detector/get_installed_version_win.cc
+@@ -11,10 +11,77 @@
+ #include "base/location.h"
+ #include "base/task/task_traits.h"
+ #include "base/task/thread_pool.h"
++#include "chrome/browser/buildflags.h"
++
++#if BUILDFLAG(ENABLE_WINSPARKLE)
++#include <windows.h>
++
++#include <string>
++#include <vector>
++
++#include "base/base_paths.h"
++#include "base/files/file_path.h"
++#include "base/files/file_util.h"
++#include "base/path_service.h"
++#include "base/process/process.h"
++#include "base/strings/string_number_conversions.h"
++#include "base/time/time.h"
++#include "base/version.h"
++#include "base/version_info/version_info.h"
++#include "chrome/common/chrome_paths.h"
++#include "chrome/installer/util/util_constants.h"
++#else
+ #include "chrome/installer/util/install_util.h"
++#endif
+ 
+ namespace {
+ 
++#if BUILDFLAG(ENABLE_WINSPARKLE)
++
++// Duplicated helium::HasPendingUpdateSwap() here rather than shared to
++// avoid an upgrade_detector -> //chrome/browser circular dependency.
++bool HasPendingUpdateSwap() {
++  base::FilePath dir;
++  if (!base::PathService::Get(base::DIR_EXE, &dir)) {
++    return false;
++  }
++  return ::GetFileAttributesW(
++             dir.Append(installer::kChromeNewExe).value().c_str()) !=
++         INVALID_FILE_ATTRIBUTES;
++}
++
++// System installs can't stage without elevation, so the glue drops a
++// marker holding the process's creation time, so any prior sessions
++// are ignored, and quit-without-relaunch doesn't leave a stale chip.
++bool HasPendingSystemUpdate() {
++  base::FilePath user_data;
++  if (!base::PathService::Get(chrome::DIR_USER_DATA, &user_data)) {
++    return false;
++  }
++  std::string token;
++  if (!base::ReadFileToString(
++          user_data.Append(FILE_PATH_LITERAL("PendingSystemUpdate")), &token)) {
++    return false;
++  }
++  return token == base::NumberToString(base::Process::Current()
++                                           .CreationTime()
++                                           .ToDeltaSinceWindowsEpoch()
++                                           .InMicroseconds());
++}
++
++InstalledAndCriticalVersion GetInstalledVersionSynchronous() {
++  base::Version running = version_info::GetVersion();
++  if ((HasPendingUpdateSwap() || HasPendingSystemUpdate()) &&
++      running.IsValid()) {
++    std::vector<uint32_t> components = running.components();
++    components.back() += 1;
++    return InstalledAndCriticalVersion(base::Version(std::move(components)));
++  }
++  return InstalledAndCriticalVersion(std::move(running));
++}
++
++#else  // !BUILDFLAG(ENABLE_WINSPARKLE)
++
+ InstalledAndCriticalVersion GetInstalledVersionSynchronous() {
+   base::Version installed_version =
+       InstallUtil::GetChromeVersion(!InstallUtil::IsPerUserInstall());
+@@ -28,6 +95,8 @@ InstalledAndCriticalVersion GetInstalled
+   return InstalledAndCriticalVersion(std::move(installed_version));
+ }
+ 
++#endif  // BUILDFLAG(ENABLE_WINSPARKLE)
++
+ }  // namespace
+ 
+ void GetInstalledVersion(InstalledVersionCallback callback) {

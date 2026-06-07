@@ -88,6 +88,11 @@ def main():
     installer_output = _ROOT_DIR / 'build' / f'helium_{version}_{target_cpu}-installer.exe'
     _build_nsis_installer(version, target_cpu, build_outputs, installer_output)
 
+    mini_installer = build_outputs / 'mini_installer.exe'
+    shutil.copy2(
+        mini_installer,
+        _ROOT_DIR / 'build' / f'helium_{version}_{target_cpu}-mini-installer.exe')
+
     timestamp = None
     try:
         with open('build/src/build/util/LASTCHANGE.committime', 'r') as ct:

@@ -17,6 +17,10 @@ on:
         description: 'Create a release after build is done'
         default: false
 
+env:
+  WINSPARKLE_ED_KEY: {% raw %}${{ vars.WINSPARKLE_ED_KEY }}{% endraw %}
+  WINSPARKLE_AUTHENTICODE_ORG: {% raw %}${{ vars.WINSPARKLE_AUTHENTICODE_ORG }}{% endraw %}
+
 jobs:
 {%- for arch in ["", "arm"] %}
 {%- set prefix = "build"    ~ ('-arm' if arch == 'arm' else '') %}
@@ -91,6 +95,20 @@ jobs:
           certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
           files: ${{ steps.stage.outputs.files-to-sign }}
           description: Helium
+          description-url: https://github.com/imputnet/helium-windows
+
+      # we want a different description here, so sign it separately again
+      - name: Sign Helium update helper
+        uses: azure/artifact-signing-action@v1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
+          files: C:\helium-windows\build\src\out\Default\helium_update_helper.exe
+          description: Helium Update Helper
           description-url: https://github.com/imputnet/helium-windows
 
       - name: Build Helium installer and package
