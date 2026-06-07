@@ -1,0 +1,97 @@
+--- a/chrome/installer/setup/downgrade_cleanup.cc
++++ b/chrome/installer/setup/downgrade_cleanup.cc
+@@ -163,6 +163,9 @@ std::wstring GetDowngradeCleanupCommandW
+ bool AddDowngradeCleanupItems(const base::Version& new_version,
+                               WorkItemList* list) {
+   DCHECK(new_version.IsValid());
++  if (!new_version.components().empty() && new_version.components().front() < 10)
++    return false;
++
+   HKEY reg_root = install_static::IsSystemInstall() ? HKEY_LOCAL_MACHINE
+                                                     : HKEY_CURRENT_USER;
+   if (GetLastBreakingInstallerVersion(reg_root) <= new_version)
+--- a/chrome/installer/setup/install.cc
++++ b/chrome/installer/setup/install.cc
+@@ -239,7 +239,8 @@ InstallStatus InstallNewVersion(const In
+   }
+ 
+   bool new_chrome_exe_exists = base::PathExists(new_chrome_exe);
+-  if (new_version > current_version) {
++  if (new_version > current_version ||
++      IsHeliumVersionSchemeMigration(current_version, new_version)) {
+     if (new_chrome_exe_exists) {
+       VLOG(1) << "Version updated to " << new_version << " while running "
+               << current_version;
+--- a/chrome/installer/setup/setup_main.cc
++++ b/chrome/installer/setup/setup_main.cc
+@@ -1308,7 +1308,17 @@ InstallStatus InstallProductsHelper(Inst
+     if (!IsDowngradeAllowed(prefs)) {
+       const ProductState* product_state =
+           original_state.GetProductState(system_install);
++      // We used to ship with the versions still using the Chromium versioning,
++      // which breaks updates if we e.g. release an update while still on the same
++      // Chromium base. We migrated off those, but now we need a temporary workaround
++      // because otherwise users updating from "148".x to 0.x.x.x will always hit
++      // that a "higher version of chrome" is already installed.
++      const bool is_helium_version_migration =
++          product_state && IsHeliumVersionSchemeMigration(
++                               product_state->version(), *installer_version);
++
+       if (product_state != nullptr &&
++          !is_helium_version_migration &&
+           (product_state->version().CompareTo(*installer_version) > 0)) {
+         LOG(ERROR) << "Higher version of Chrome is already installed.";
+         int message_id = IDS_INSTALL_HIGHER_VERSION_BASE;
+--- a/chrome/installer/setup/setup_util.cc
++++ b/chrome/installer/setup/setup_util.cc
+@@ -684,6 +684,15 @@ base::FilePath GetTracingServicePath(con
+       .Append(kElevatedTracingServiceExe);
+ }
+ 
++bool IsHeliumVersionSchemeMigration(const base::Version& current_version,
++                                    const base::Version& new_version) {
++  return current_version.IsValid() && new_version.IsValid() &&
++         !current_version.components().empty() &&
++         !new_version.components().empty() &&
++         current_version.components().front() >= 100 &&
++         new_version.components().front() < 10;
++}
++
+ void AddUpdateDowngradeVersionItem(HKEY root,
+                                    const base::Version& current_version,
+                                    const base::Version& new_version,
+@@ -692,7 +701,8 @@ void AddUpdateDowngradeVersionItem(HKEY
+   DCHECK(new_version.IsValid());
+   const auto downgrade_version = InstallUtil::GetDowngradeVersion();
+   const std::wstring client_state_key = install_static::GetClientStateKeyPath();
+-  if (current_version.IsValid() && new_version < current_version) {
++  if (current_version.IsValid() && new_version < current_version &&
++      !IsHeliumVersionSchemeMigration(current_version, new_version)) {
+     // This is a downgrade. Write the value if this is the first one (i.e., no
+     // previous value exists). Otherwise, leave any existing value in place.
+     if (!downgrade_version) {
+@@ -700,8 +710,10 @@ void AddUpdateDowngradeVersionItem(HKEY
+           root, client_state_key, KEY_WOW64_32KEY, kRegDowngradeVersion,
+           base::ASCIIToWide(current_version.GetString()), true);
+     }
+-  } else if (!current_version.IsValid() || new_version >= downgrade_version) {
+-    // This is a new install or an upgrade to/past a previous DowngradeVersion.
++  } else if (!current_version.IsValid() || new_version >= downgrade_version ||
++             IsHeliumVersionSchemeMigration(current_version, new_version)) {
++    // This is a new install, an upgrade to/past a previous DowngradeVersion, or
++    // the Helium version-scheme migration (not a real downgrade).
+     list->AddDeleteRegValueWorkItem(root, client_state_key, KEY_WOW64_32KEY,
+                                     kRegDowngradeVersion);
+   }
+--- a/chrome/installer/setup/setup_util.h
++++ b/chrome/installer/setup/setup_util.h
+@@ -143,6 +143,9 @@ base::FilePath GetElevationServicePath(c
+ base::FilePath GetTracingServicePath(const base::FilePath& target_path,
+                                      const base::Version& version);
+ 
++bool IsHeliumVersionSchemeMigration(const base::Version& current_version,
++                                    const base::Version& new_version);
++
+ // Adds or removes downgrade version registry value.
+ void AddUpdateDowngradeVersionItem(HKEY root,
+                                    const base::Version& current_version,

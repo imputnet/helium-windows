@@ -1,0 +1,243 @@
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -54,6 +54,7 @@ if (is_android) {
+ 
+ if (is_win) {
+   import("//build/config/win/manifest.gni")
++  import("//chrome/updater/winsparkle.gni")
+ }
+ 
+ assert(!is_fuchsia, "Fuchsia shouldn't use anything in //chrome")
+@@ -100,6 +101,13 @@ buildflag_header("buildflags") {
+ 
+   if (is_win) {
+     flags += [ "ENABLE_SEGMENT_HEAP=$enable_segment_heap" ]
++
++    flags += [
++      "ENABLE_WINSPARKLE=$enable_winsparkle",
++      "WINSPARKLE_ED_KEY=\"$winsparkle_ed_key\"",
++      "WINSPARKLE_AUTOMATIC_CHECKS=$winsparkle_automatic_checks",
++      "WINSPARKLE_CHECK_INTERVAL=$winsparkle_check_interval",
++    ]
+   }
+ 
+   # Android and ChromeOS don't support multiple browser processes, so they don't
+@@ -4069,6 +4077,17 @@ static_library("browser") {
+   }
+ 
+   if (is_win) {
++    if (enable_winsparkle) {
++      sources += [
++        "win/winsparkle_glue.cc",
++        "win/winsparkle_glue.h",
++      ]
++      deps += [
++        "//components/helium_services",
++        "//third_party/winsparkle",
++      ]
++    }
++
+     libs += [
+       "secur32.lib",
+ 
+--- a/chrome/browser/buildflags.gni
++++ b/chrome/browser/buildflags.gni
+@@ -3,6 +3,9 @@
+ # found in the LICENSE file.
+ 
+ import("//build/config/chrome_build.gni")
++if (is_win) {
++  import("//chrome/updater/winsparkle.gni")
++}
+ 
+ # IMPORTANT
+ # We are not accepting any new build flags in //chrome. See
+@@ -17,5 +20,5 @@ declare_args() {
+ 
+   # Detect updates and notify the user for Google Chrome across all platforms.
+   # Chromium does not use an auto-updater.
+-  enable_update_notifications = is_chrome_branded
++  enable_update_notifications = enable_winsparkle
+ }
+--- a/chrome/browser/ui/BUILD.gn
++++ b/chrome/browser/ui/BUILD.gn
+@@ -31,6 +31,10 @@ import("//ui/views/features.gni")
+ assert(enable_supervised_users)
+ assert(!is_fuchsia, "Fuchsia shouldn't use anything in //chrome")
+ 
++if (is_win) {
++  import("//chrome/updater/winsparkle.gni")
++}
++
+ generate_allowlist_from_histograms_file("webui_name_variants") {
+   namespace = "views_metrics"
+   input_xml_file = "//tools/metrics/histograms/metadata/page/histograms.xml"
+@@ -3619,7 +3623,7 @@ static_library("ui") {
+         "//chrome/browser/win/installer_downloader:prefs",
+         "//chrome/updater/app/server/win:updater_legacy_idl",
+       ]
+-    } else {
++    } else if (!enable_winsparkle) {
+       sources += [ "webui/help/version_updater_basic.cc" ]
+     }
+   }
+--- a/chrome/installer/mini_installer/chrome.release
++++ b/chrome/installer/mini_installer/chrome.release
+@@ -36,6 +36,7 @@ vk_swiftshader.dll: %(VersionDir)s\
+ vk_swiftshader_icd.json: %(VersionDir)s\
+ vulkan-1.dll: %(VersionDir)s\
+ v8_context_snapshot.bin: %(VersionDir)s\
++WinSparkle.dll: %(VersionDir)s\
+ #
+ # Sub directories living in the version dir
+ #
+--- a/chrome/tools/build/win/FILES.cfg
++++ b/chrome/tools/build/win/FILES.cfg
+@@ -79,6 +79,12 @@ FILES = [
+     'filegroup': ['default'],
+   },
+   {
++    'filename': 'WinSparkle.dll',
++    'buildtype': ['dev', 'official'],
++    'filegroup': ['default'],
++    'optional': ['dev', 'official'],
++  },
++  {
+     'filename': '*.manifest',
+     'buildtype': ['official'],
+     'filegroup': ['default'],
+--- /dev/null
++++ b/chrome/updater/winsparkle.gni
+@@ -0,0 +1,13 @@
++# Copyright 2026 The Helium Authors
++# You can use, redistribute, and/or modify this source code under
++# the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++declare_args() {
++  enable_winsparkle = false
++  winsparkle_ed_key = ""
++  winsparkle_automatic_checks = true
++  winsparkle_check_interval = 3600
++
++  # Must match the Subject Organization (O= field) of the signing cert.
++  winsparkle_authenticode_org = ""
++}
+--- a/infra/archive_config/win-archive-rel.json
++++ b/infra/archive_config/win-archive-rel.json
+@@ -33,7 +33,8 @@
+                 "v8_context_snapshot.bin",
+                 "vk_swiftshader.dll",
+                 "vk_swiftshader_icd.json",
+-                "vulkan-1.dll"
++                "vulkan-1.dll",
++                "WinSparkle.dll"
+             ],
+             "file_globs": [
+                 "locales\\*.pak",
+--- /dev/null
++++ b/third_party/winsparkle/BUILD.gn
+@@ -0,0 +1,73 @@
++# Copyright 2026 The Helium Authors
++# You can use, redistribute, and/or modify this source code under
++# the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++assert(is_win)
++
++config("winsparkle_config") {
++  defines = [ "WIN_SPARKLE_NO_AUTOLINK" ]
++  include_dirs = [ "include" ]
++}
++
++config("winsparkle_delayload") {
++  ldflags = [ "/DELAYLOAD:WinSparkle.dll" ]
++}
++
++shared_library("winsparkle") {
++  output_name = "WinSparkle"
++
++  sources = [
++    "src/appcast.cpp",
++    "src/appcontroller.cpp",
++    "src/dll_api.cpp",
++    "src/dllmain.cpp",
++    "src/download.cpp",
++    "src/error.cpp",
++    "src/settings.cpp",
++    "src/signatureverifier.cpp",
++    "src/threads.cpp",
++    "src/ui_headless.cpp",  # headless replacement for src/ui.cpp.
++    "src/updatechecker.cpp",
++    "src/updatedownloader.cpp",
++    "src/winsparkle.rc",
++  ]
++
++  include_dirs = [
++    "include",
++    "src",
++  ]
++
++  defines = [ "BUILDING_WIN_SPARKLE" ]
++
++  deps = [
++    "//third_party/boringssl",
++    "//third_party/expat",
++  ]
++
++  libs = [
++    "advapi32.lib",
++    "crypt32.lib",
++    "ole32.lib",
++    "rpcrt4.lib",
++    "shell32.lib",
++    "user32.lib",
++    "wininet.lib",
++  ]
++
++  configs -= [
++    "//build/config/compiler:chromium_code",
++    "//build/config/compiler:no_exceptions",
++  ]
++  configs += [
++    "//build/config/compiler:no_chromium_code",
++    "//build/config/compiler:exceptions",
++  ]
++
++  cflags_cc = [
++    "-Wno-misleading-indentation",  # appcast.cpp
++    "-Wno-reorder-ctor",            # updatedownloader.cpp
++  ]
++
++  public_configs = [ ":winsparkle_config" ]
++  all_dependent_configs = [ ":winsparkle_delayload" ]
++}
+--- /dev/null
++++ b/third_party/winsparkle/README.chromium
+@@ -0,0 +1,13 @@
++Name: WinSparkle
++Short Name: winsparkle
++URL: https://github.com/vslavik/winsparkle
++License: MIT
++License File: COPYING
++Shipped: yes
++Security Critical: yes
++
++Description:
++Used for Windows autoupdates.
++
++Local Modifications:
++Ripped out all UI logic, old DSA signing logic, and dependencies thereof.
+--- a/third_party/winsparkle/include/winsparkle.h
++++ b/third_party/winsparkle/include/winsparkle.h
+@@ -31,7 +31,11 @@
+ 
+ #include "winsparkle-version.h"
+ 
+-#if !defined(BUILDING_WIN_SPARKLE) && defined(_MSC_VER)
++// WIN_SPARKLE_NO_AUTOLINK lets GN link the import library explicitly
++// via the build system instead of via this pragma whose hard-coded name
++// may not match the GN import lib.
++#if !defined(BUILDING_WIN_SPARKLE) && !defined(WIN_SPARKLE_NO_AUTOLINK) && \
++    defined(_MSC_VER)
+ #pragma comment(lib, "WinSparkle.lib")
+ #endif
+ 

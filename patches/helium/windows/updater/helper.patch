@@ -1,0 +1,696 @@
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -4086,6 +4086,7 @@ static_library("browser") {
+         "//components/helium_services",
+         "//third_party/winsparkle",
+       ]
++      data_deps = [ "//chrome/installer/helium_update_helper" ]
+     }
+ 
+     libs += [
+--- /dev/null
++++ b/chrome/installer/helium_update_helper/BUILD.gn
+@@ -0,0 +1,57 @@
++# Copyright 2026 The Helium Authors
++# You can use, redistribute, and/or modify this source code under
++# the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++import("//build/config/win/manifest.gni")
++import("//chrome/updater/winsparkle.gni")
++
++assert(is_win)
++
++windows_manifest("helium_update_helper_manifest") {
++  sources = [
++    as_invoker_manifest,
++    common_controls_manifest,
++  ]
++}
++
++executable("helium_update_helper") {
++  output_name = "helium_update_helper"
++
++  sources = [
++    "event_log.cc",
++    "helium_update_helper.h",
++    "helium_update_helper.rc",
++    "helium_update_helper_main.cc",
++    "localized_strings.cc",
++    "payload_verifier.cc",
++    "progress_dialog.cc",
++    "update_installer.cc",
++  ]
++
++  inputs = [ "//chrome/app/theme/chromium/win/chromium.ico" ]
++
++  configs -= [ "//build/config/win:console" ]
++  configs += [ "//build/config/win:windowed" ]
++
++  deps = [
++    ":helium_update_helper_manifest",
++    "//base",
++    "//chrome/installer/util:strings",
++    "//third_party/boringssl",
++  ]
++
++  defines = [
++    "HELIUM_AUTHENTICODE_ORG=L\"$winsparkle_authenticode_org\"",
++    "HELIUM_EDDSA_PUBKEY=\"$winsparkle_ed_key\"",
++  ]
++
++  libs = [
++    "advapi32.lib",
++    "comctl32.lib",
++    "crypt32.lib",
++    "ole32.lib",
++    "oleaut32.lib",
++    "shell32.lib",
++    "wintrust.lib",
++  ]
++}
+--- /dev/null
++++ b/chrome/installer/helium_update_helper/event_log.cc
+@@ -0,0 +1,24 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++#include "chrome/installer/helium_update_helper/helium_update_helper_internal.h"
++
++namespace helium_updater {
++
++namespace {
++constexpr wchar_t kEventSource[] = L"HeliumUpdateHelper";
++}  // namespace
++
++void LogEvent(WORD type, const std::wstring& message) {
++  HANDLE source = ::RegisterEventSourceW(nullptr, kEventSource);
++  if (!source) {
++    return;
++  }
++  const wchar_t* strings[1] = {message.c_str()};
++  ::ReportEventW(source, type, /*category=*/0, /*event_id=*/0, /*sid=*/nullptr,
++                 /*num_strings=*/1, /*data_size=*/0, strings, /*data=*/nullptr);
++  ::DeregisterEventSource(source);
++}
++
++}  // namespace helium_updater
+--- /dev/null
++++ b/chrome/installer/helium_update_helper/helium_update_helper.rc
+@@ -0,0 +1,5 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++1 ICON "..\\..\\app\\theme\\chromium\\win\\chromium.ico"
+--- /dev/null
++++ b/chrome/installer/helium_update_helper/helium_update_helper_internal.h
+@@ -0,0 +1,68 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++#ifndef CHROME_INSTALLER_HELIUM_UPDATE_HELPER_HELIUM_UPDATE_HELPER_INTERNAL_H_
++#define CHROME_INSTALLER_HELIUM_UPDATE_HELPER_HELIUM_UPDATE_HELPER_INTERNAL_H_
++
++#include <windows.h>
++
++#include <cstdint>
++#include <string>
++
++#include "base/containers/span.h"
++#include "base/files/file_path.h"
++
++namespace helium_updater {
++
++// Process exit codes, also returned by ApplyUpdate.
++enum ExitCode {
++  kOk = 0,
++  kBadArgs = 2,
++  kCannotOpenPayload = 3,
++  kVerificationFailed = 4,
++  kInstallLaunchFailed = 5,
++  kInstallFailed = 6,
++  kBrowserStillRunning = 7,
++};
++
++// Writes a message to the Windows Application event log under
++// the helper source. `type` is an EVENTLOG_* severity.
++void LogEvent(WORD type, const std::wstring& message);
++
++// Reads the localized string identified by `base_message_id`
++// (an installer IDS_*_BASE id) from the embedded string table
++// for the OS UI language. Returns an empty string on failure.
++std::wstring LocalizedString(int base_message_id);
++
++// Returns true if `path` is a local, absolute, non-UNC path.
++bool IsAcceptablePayloadPath(const base::FilePath& path);
++
++// Returns true if the payload is Authenticode-trusted AND either signed by
++// Helium's organization or carrying a valid EdDSA signature.
++// - `file` is the open handle to the payload at `path`.
++// - `signature_b64` is the base64 ed25519 detached signature of `bytes`.
++bool VerifyPayload(HANDLE file,
++                   const base::FilePath& path,
++                   base::span<const uint8_t> bytes,
++                   const std::string& signature_b64);
++
++// Verifies and runs the payload (assuming the browser has already exited).
++// Returns an ExitCode, does not relaunch.
++int ApplyUpdate(const base::FilePath& payload, const std::string& signature);
++
++// Relaunches the installed chrome.exe de-elevated via the shell.
++// Returns false on failure.
++bool RelaunchBrowser();
++
++// Runs ApplyUpdate on a worker thread behind a marquee progress dialog
++// and returns its ExitCode.
++int InstallWithProgressUI(const base::FilePath& payload,
++                          const std::string& signature);
++
++// Shows a modal dialog reporting that the update failed.
++void ShowUpdateFailedDialog();
++
++}  // namespace helium_updater
++
++#endif  // CHROME_INSTALLER_HELIUM_UPDATE_HELPER_HELIUM_UPDATE_HELPER_INTERNAL_H_
+--- /dev/null
++++ b/chrome/installer/helium_update_helper/helium_update_helper_main.cc
+@@ -0,0 +1,59 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++//
++// Elevated apply helper for Helium's *system-level* auto-updates.
++// Launched by the browser when the user clicks Relaunch.
++// Args:  --payload=<mini_installer.exe>  --signature=<base64 ed25519>
++//        --wait-pid=<browser process id>
++
++#include <windows.h>
++
++#include <cstdint>
++#include <string>
++
++#include "base/at_exit.h"
++#include "base/command_line.h"
++#include "base/files/file_path.h"
++#include "base/process/process.h"
++#include "base/strings/string_number_conversions.h"
++#include "base/strings/utf_string_conversions.h"
++#include "base/time/time.h"
++#include "base/win/scoped_com_initializer.h"
++#include "chrome/installer/helium_update_helper/helium_update_helper_internal.h"
++
++namespace {
++// How long to wait for the browser to exit before applying the update.
++constexpr base::TimeDelta kBrowserExitTimeout = base::Minutes(2);
++}  // namespace
++
++int APIENTRY wWinMain(HINSTANCE, HINSTANCE, wchar_t*, int) {
++  base::AtExitManager exit_manager;
++  ::SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
++  base::CommandLine::Init(0, nullptr);
++
++  base::win::ScopedCOMInitializer com_initializer;
++  const base::CommandLine& command = *base::CommandLine::ForCurrentProcess();
++  const base::FilePath payload = command.GetSwitchValuePath("payload");
++  const std::string signature =
++      base::WideToUTF8(command.GetSwitchValueNative("signature"));
++
++  uint32_t pid = 0;
++  if (base::StringToUint(
++          base::WideToUTF8(command.GetSwitchValueNative("wait-pid")), &pid) &&
++      pid) {
++    base::Process browser = base::Process::Open(pid);
++    if (browser.IsValid() &&
++        !browser.WaitForExitWithTimeout(kBrowserExitTimeout, nullptr)) {
++      return helium_updater::kBrowserStillRunning;
++    }
++  }
++
++  const int result = helium_updater::InstallWithProgressUI(payload, signature);
++  if (result != helium_updater::kOk) {
++    helium_updater::ShowUpdateFailedDialog();
++  }
++
++  helium_updater::RelaunchBrowser();
++  return result;
++}
+--- /dev/null
++++ b/chrome/installer/helium_update_helper/localized_strings.cc
+@@ -0,0 +1,63 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++#include <windows.h>
++
++#include <cstdint>
++
++#include "base/containers/buffer_iterator.h"
++#include "base/containers/span.h"
++#include "base/no_destructor.h"
++#include "base/win/current_module.h"
++#include "base/win/embedded_i18n/language_selector.h"
++#include "chrome/installer/helium_update_helper/helium_update_helper_internal.h"
++#include "chrome/installer/util/installer_util_strings.h"
++
++namespace helium_updater {
++
++namespace {
++constexpr base::win::i18n::LanguageSelector::LangToOffset kLanguageOffsets[] = {
++#define HANDLE_LANGUAGE(l_, o_) {L## #l_, o_},
++    DO_LANGUAGES
++#undef HANDLE_LANGUAGE
++};
++}  // namespace
++
++std::wstring LocalizedString(int base_message_id) {
++  static base::NoDestructor<base::win::i18n::LanguageSelector> selector(
++      std::wstring_view(), kLanguageOffsets);
++  const UINT message_id = static_cast<UINT>(base_message_id) +
++                          static_cast<UINT>(selector->offset());
++  const WORD bundle_id = static_cast<WORD>((message_id >> 4) + 1);
++  HRSRC res =
++      ::FindResourceW(CURRENT_MODULE(), MAKEINTRESOURCEW(bundle_id), RT_STRING);
++  if (!res) {
++    return std::wstring();
++  }
++
++  HGLOBAL data = ::LoadResource(CURRENT_MODULE(), res);
++  const auto* bytes =
++      data ? static_cast<const uint8_t*>(::LockResource(data)) : nullptr;
++  if (!bytes) {
++    return std::wstring();
++  }
++
++  base::BufferIterator<const uint8_t> it(base::span(
++      bytes, static_cast<size_t>(::SizeofResource(CURRENT_MODULE(), res))));
++  for (UINT i = message_id & 0xF; i; --i) {
++    if (const auto* length = it.Object<const WORD>()) {
++      it.Span<wchar_t>(*length);
++    }
++  }
++
++  if (const auto* length = it.Object<const WORD>(); length && *length) {
++    if (auto str = it.Span<wchar_t>(*length); !str.empty()) {
++      return std::wstring(str.data(), *length);
++    }
++  }
++
++  return std::wstring();
++}
++
++}  // namespace helium_updater
+--- /dev/null
++++ b/chrome/installer/helium_update_helper/payload_verifier.cc
+@@ -0,0 +1,118 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++#include <windows.h>
++
++#include <softpub.h>
++#include <wincrypt.h>
++#include <wintrust.h>
++
++#include <iterator>
++#include <utility>
++
++#include "base/base64.h"
++#include "base/strings/string_util_win.h"
++#include "base/strings/stringprintf.h"
++#include "base/strings/utf_string_conversions.h"
++#include "chrome/installer/helium_update_helper/helium_update_helper_internal.h"
++#include "third_party/boringssl/src/include/openssl/curve25519.h"
++
++namespace helium_updater {
++
++namespace {
++
++bool SignerOrgMatches(PCCERT_CONTEXT cert) {
++  wchar_t org[std::size(HELIUM_AUTHENTICODE_ORG) + 1] = {};
++  ::CertGetNameStringW(cert, CERT_NAME_ATTR_TYPE, 0,
++                       const_cast<char*>(szOID_ORGANIZATION_NAME), org,
++                       std::size(org));
++  return base::EqualsCaseInsensitiveASCII(org, HELIUM_AUTHENTICODE_ORG);
++}
++
++std::pair<bool, bool> VerifyAuthenticode(HANDLE file,
++                                         const std::wstring& path) {
++  WINTRUST_FILE_INFO file_info = {sizeof(file_info)};
++  file_info.pcwszFilePath = path.c_str();
++  if (file != INVALID_HANDLE_VALUE) {
++    ::SetFilePointer(file, 0, nullptr, FILE_BEGIN);
++  }
++  file_info.hFile = file;
++
++  WINTRUST_DATA data = {sizeof(data)};
++  data.dwUIChoice = WTD_UI_NONE;
++  data.fdwRevocationChecks = WTD_REVOKE_WHOLECHAIN;
++  data.dwUnionChoice = WTD_CHOICE_FILE;
++  data.pFile = &file_info;
++  data.dwStateAction = WTD_STATEACTION_VERIFY;
++  data.dwProvFlags = WTD_REVOCATION_CHECK_CHAIN;
++
++  GUID action = WINTRUST_ACTION_GENERIC_VERIFY_V2;
++  const HWND kNoUi = reinterpret_cast<HWND>(INVALID_HANDLE_VALUE);
++  const LONG status = ::WinVerifyTrust(kNoUi, &action, &data);
++  const bool trusted = status == ERROR_SUCCESS;
++  bool org_matches = false;
++
++  if (trusted) {
++    CRYPT_PROVIDER_DATA* prov =
++        WTHelperProvDataFromStateData(data.hWVTStateData);
++    CRYPT_PROVIDER_SGNR* sgnr =
++        prov ? WTHelperGetProvSignerFromChain(prov, 0, FALSE, 0) : nullptr;
++    CRYPT_PROVIDER_CERT* cert = (sgnr && sgnr->csCertChain > 0)
++                                    ? WTHelperGetProvCertFromChain(sgnr, 0)
++                                    : nullptr;
++    if (cert && cert->pCert) {
++      org_matches = SignerOrgMatches(cert->pCert);
++    }
++  } else {
++    const DWORD last_error = ::GetLastError();
++    LogEvent(EVENTLOG_ERROR_TYPE,
++             base::UTF8ToWide(base::StringPrintf(
++                 "Authenticode check failed: status=0x%08lX last_error=0x%08lX",
++                 status, last_error)));
++  }
++
++  data.dwStateAction = WTD_STATEACTION_CLOSE;
++  ::WinVerifyTrust(kNoUi, &action, &data);
++  return {trusted, org_matches};
++}
++
++bool VerifyEdDSA(base::span<const uint8_t> payload,
++                 const std::string& signature_b64) {
++  std::string signature;
++  std::string pubkey;
++  if (!base::Base64Decode(signature_b64, &signature) ||
++      !base::Base64Decode(HELIUM_EDDSA_PUBKEY, &pubkey)) {
++    return false;
++  }
++
++  if (signature.size() != 64 || pubkey.size() != 32 || payload.empty()) {
++    return false;
++  }
++
++  return ED25519_verify(payload.data(), payload.size(),
++                        reinterpret_cast<const uint8_t*>(signature.data()),
++                        reinterpret_cast<const uint8_t*>(pubkey.data())) == 1;
++}
++
++}  // namespace
++
++bool IsAcceptablePayloadPath(const base::FilePath& path) {
++  return !path.empty() && path.IsAbsolute() && !path.IsNetwork();
++}
++
++bool VerifyPayload(HANDLE file,
++                   const base::FilePath& path,
++                   base::span<const uint8_t> bytes,
++                   const std::string& signature_b64) {
++  auto [trusted, org_matches] = VerifyAuthenticode(file, path.value());
++  if (!trusted) {
++    return false;
++  }
++
++  // Either O= must match expectations, or the EdDSA signature check must pass.
++  // This is to allow rotating either component (similarly to Sparkle on Mac).
++  return org_matches || VerifyEdDSA(bytes, signature_b64);
++}
++
++}  // namespace helium_updater
+--- /dev/null
++++ b/chrome/installer/helium_update_helper/progress_dialog.cc
+@@ -0,0 +1,108 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++#include <windows.h>
++
++#include <commctrl.h>
++
++#include <atomic>
++#include <utility>
++
++#include "base/threading/simple_thread.h"
++#include "chrome/installer/helium_update_helper/helium_update_helper_internal.h"
++#include "chrome/installer/util/installer_util_strings.h"
++
++namespace helium_updater {
++
++namespace {
++
++class InstallJob : public base::DelegateSimpleThread::Delegate {
++ public:
++  InstallJob(base::FilePath payload, std::string signature)
++      : payload_(std::move(payload)), signature_(std::move(signature)) {}
++
++  void Run() override {
++    result_.store(ApplyUpdate(payload_, signature_), std::memory_order_release);
++    done_.store(true, std::memory_order_release);
++  }
++
++  bool done() const { return done_.load(std::memory_order_acquire); }
++  int result() const { return result_.load(std::memory_order_acquire); }
++
++ private:
++  const base::FilePath payload_;
++  const std::string signature_;
++  std::atomic<bool> done_{false};
++  std::atomic<int> result_{kInstallFailed};
++};
++
++HRESULT CALLBACK ProgressDialogCallback(HWND hwnd,
++                                        UINT msg,
++                                        WPARAM wparam,
++                                        LPARAM lparam,
++                                        LONG_PTR data) {
++  auto* job = reinterpret_cast<InstallJob*>(data);
++  switch (msg) {
++    case TDN_CREATED:
++      ::SendMessageW(hwnd, TDM_SET_PROGRESS_BAR_MARQUEE, TRUE, 30);
++      // The install can't be safely interrupted; the Cancel button exists only
++      // as the handle we use to close the dialog, so show it disabled.
++      ::SendMessageW(hwnd, TDM_ENABLE_BUTTON, IDCANCEL, FALSE);
++      break;
++    case TDN_TIMER:
++      if (job->done()) {
++        ::SendMessageW(hwnd, TDM_ENABLE_BUTTON, IDCANCEL, TRUE);
++        ::SendMessageW(hwnd, TDM_CLICK_BUTTON, IDCANCEL, 0);
++      }
++      break;
++    case TDN_BUTTON_CLICKED:
++      // Esc and the title-bar close also map to Cancel; block them until done.
++      if (wparam == IDCANCEL && !job->done()) {
++        return S_FALSE;
++      }
++      break;
++  }
++  return S_OK;
++}
++
++}  // namespace
++
++int InstallWithProgressUI(const base::FilePath& payload,
++                          const std::string& signature) {
++  InstallJob job(payload, signature);
++  base::DelegateSimpleThread thread(&job, "HeliumInstall");
++  thread.Start();
++
++  const std::wstring title = LocalizedString(IDS_PRODUCT_NAME_BASE);
++  const std::wstring instruction = LocalizedString(IDS_INSTALLING_BASE);
++
++  TASKDIALOGCONFIG config = {};
++  config.cbSize = sizeof(config);
++  config.dwFlags = TDF_SHOW_MARQUEE_PROGRESS_BAR | TDF_CALLBACK_TIMER;
++  config.dwCommonButtons = TDCBF_CANCEL_BUTTON;  // disabled; close handle only
++  config.pszWindowTitle = title.c_str();
++  config.pszMainInstruction = instruction.c_str();
++  config.pfCallback = &ProgressDialogCallback;
++  config.lpCallbackData = reinterpret_cast<LONG_PTR>(&job);
++  ::TaskDialogIndirect(&config, nullptr, nullptr, nullptr);
++
++  thread.Join();
++  return job.result();
++}
++
++void ShowUpdateFailedDialog() {
++  const std::wstring title = LocalizedString(IDS_PRODUCT_NAME_BASE);
++  const std::wstring message = LocalizedString(IDS_INSTALL_FAILED_BASE);
++
++  TASKDIALOGCONFIG config = {};
++  config.cbSize = sizeof(config);
++  config.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION;
++  config.dwCommonButtons = TDCBF_OK_BUTTON;
++  config.pszWindowTitle = title.c_str();
++  config.pszMainIcon = TD_ERROR_ICON;
++  config.pszMainInstruction = message.c_str();
++  ::TaskDialogIndirect(&config, nullptr, nullptr, nullptr);
++}
++
++}  // namespace helium_updater
+--- /dev/null
++++ b/chrome/installer/helium_update_helper/update_installer.cc
+@@ -0,0 +1,111 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++#include <windows.h>
++
++#include <cstdint>
++#include <vector>
++
++#include "base/base_paths.h"
++#include "base/command_line.h"
++#include "base/containers/span.h"
++#include "base/files/file.h"
++#include "base/path_service.h"
++#include "base/process/launch.h"
++#include "base/process/process.h"
++#include "base/strings/strcat_win.h"
++#include "base/strings/string_number_conversions_win.h"
++#include "base/win/elevation_util.h"
++#include "chrome/installer/helium_update_helper/helium_update_helper_internal.h"
++
++namespace helium_updater {
++
++namespace {
++
++// Upper bound on the update payload we'll read into memory. The mini_installer
++// is hundred to a few hundred MB; reject anything beyond 512 MiB as bogus.
++constexpr int64_t kMaxPayloadBytes = int64_t{512} * 1024 * 1024;
++
++base::FilePath InstalledChromeExe() {
++  base::FilePath exe;
++  if (!base::PathService::Get(base::FILE_EXE, &exe)) {
++    return base::FilePath();
++  }
++  return exe.DirName().DirName().Append(FILE_PATH_LITERAL("chrome.exe"));
++}
++
++}  // namespace
++
++int ApplyUpdate(const base::FilePath& payload, const std::string& signature) {
++  if (!IsAcceptablePayloadPath(payload)) {
++    LogEvent(EVENTLOG_ERROR_TYPE,
++             L"Payload path missing or not a local absolute path");
++    return kBadArgs;
++  }
++
++  base::File file(payload, base::File::FLAG_OPEN | base::File::FLAG_READ |
++                               base::File::FLAG_WIN_EXCLUSIVE_WRITE);
++  if (!file.IsValid()) {
++    LogEvent(EVENTLOG_ERROR_TYPE, L"Cannot open payload.");
++    return kCannotOpenPayload;
++  }
++
++  const int64_t length = file.GetLength();
++  if (length <= 0 || length > kMaxPayloadBytes) {
++    LogEvent(EVENTLOG_ERROR_TYPE, L"Payload too large or unreadable.");
++    return kCannotOpenPayload;
++  }
++
++  std::vector<uint8_t> bytes(static_cast<size_t>(length));
++  if (!file.ReadAndCheck(0, base::span(bytes))) {
++    LogEvent(EVENTLOG_ERROR_TYPE, L"Cannot read payload.");
++    return kCannotOpenPayload;
++  }
++
++  if (!VerifyPayload(file.GetPlatformFile(), payload, bytes, signature)) {
++    LogEvent(EVENTLOG_ERROR_TYPE,
++             L"Payload failed verification; refusing to install.");
++    return kVerificationFailed;
++  }
++
++  // Run the installer. The browser has exited, so this is a clean install
++  // (new version dir + rename), no deferral.
++  base::CommandLine command(payload);
++  command.AppendSwitch("system-level");
++  command.AppendSwitch("do-not-launch-chrome");
++  base::LaunchOptions options;
++  options.start_hidden = true;
++  base::Process installer = base::LaunchProcess(command, options);
++  if (!installer.IsValid()) {
++    LogEvent(EVENTLOG_ERROR_TYPE, L"Failed to launch installer.");
++    return kInstallLaunchFailed;
++  }
++
++  int exit_code = -1;
++  if (!installer.WaitForExit(&exit_code) || exit_code != 0) {
++    LogEvent(EVENTLOG_ERROR_TYPE,
++             base::StrCat({L"Installer reported failure, exit code ",
++                           base::NumberToWString(exit_code)}));
++    return kInstallFailed;
++  }
++
++  LogEvent(EVENTLOG_INFORMATION_TYPE, L"System update installed.");
++  return kOk;
++}
++
++bool RelaunchBrowser() {
++  const base::FilePath chrome_exe = InstalledChromeExe();
++  if (chrome_exe.empty()) {
++    return false;
++  }
++  const HRESULT hr = base::win::RunDeElevatedNoWait(chrome_exe.value(),
++                                                    L"--restore-last-session");
++  if (FAILED(hr)) {
++    LogEvent(EVENTLOG_WARNING_TYPE, L"Relaunch via shell failed.");
++    return false;
++  }
++  return true;
++}
++
++}  // namespace helium_updater
+--- a/chrome/installer/mini_installer/chrome.release
++++ b/chrome/installer/mini_installer/chrome.release
+@@ -26,6 +26,7 @@ chrome_pwa_launcher.exe: %(VersionDir)s\
+ chrome_wer.dll: %(VersionDir)s\
+ d3dcompiler_47.dll: %(VersionDir)s\
+ eventlog_provider.dll: %(VersionDir)s\
++helium_update_helper.exe: %(VersionDir)s\
+ icudtl.dat: %(VersionDir)s\
+ libEGL.dll: %(VersionDir)s\
+ libGLESv2.dll: %(VersionDir)s\
+--- a/chrome/installer/util/prebuild/create_installer_string_rc.py
++++ b/chrome/installer/util/prebuild/create_installer_string_rc.py
+@@ -14,6 +14,7 @@ STRING_IDS = [
+   'IDS_ELEVATION_SERVICE_DESCRIPTION',
+   'IDS_INBOUND_MDNS_RULE_DESCRIPTION',
+   'IDS_INBOUND_MDNS_RULE_NAME',
++  'IDS_INSTALLING',
+   'IDS_INSTALL_EXISTING_VERSION_LAUNCHED',
+   'IDS_INSTALL_FAILED',
+   'IDS_INSTALL_HIGHER_VERSION',
+--- a/chrome/tools/build/win/FILES.cfg
++++ b/chrome/tools/build/win/FILES.cfg
+@@ -85,6 +85,13 @@ FILES = [
+     'optional': ['dev', 'official'],
+   },
+   {
++    # Helium elevated SYSTEM-side update applier (system-level installs only).
++    'filename': 'helium_update_helper.exe',
++    'buildtype': ['dev', 'official'],
++    'filegroup': ['default'],
++    'optional': ['dev', 'official'],
++  },
++  {
+     'filename': '*.manifest',
+     'buildtype': ['official'],
+     'filegroup': ['default'],
+--- a/infra/archive_config/win-archive-rel.json
++++ b/infra/archive_config/win-archive-rel.json
+@@ -17,6 +17,7 @@
+                 "elevation_service.exe",
+                 "eventlog_provider.dll",
+                 "First Run",
++                "helium_update_helper.exe",
+                 "icudtl.dat",
+                 "interactive_ui_tests.exe",
+                 "IwaKeyDistribution\\iwa-key-distribution.pb",

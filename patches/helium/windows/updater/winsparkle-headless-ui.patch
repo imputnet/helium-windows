@@ -1,0 +1,234 @@
+--- a/third_party/winsparkle/src/download.cpp
++++ b/third_party/winsparkle/src/download.cpp
+@@ -184,6 +184,18 @@ void WaitUntilSignaledWithTerminationChe
+     }
+ }
+ 
++std::runtime_error MakeInetError(const char *ctx, DWORD code)
++{
++    char detail[512] = {};
++    ::FormatMessageA(FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_FROM_SYSTEM |
++                         FORMAT_MESSAGE_IGNORE_INSERTS |
++                         FORMAT_MESSAGE_MAX_WIDTH_MASK,
++                     ::GetModuleHandleW(L"wininet.dll"), code, 0, detail,
++                     sizeof(detail), NULL);
++    return std::runtime_error(std::string(ctx) + " (WinINet error " +
++                              std::to_string(code) + "): " + detail);
++}
++
+ } // anonymous namespace
+ 
+ 
+@@ -202,7 +214,7 @@ void DownloadFile(const std::string& url
+     urlc.dwUrlPathLength = sizeof(url_path);
+ 
+     if ( !InternetCrackUrlA(url.c_str(), 0, ICU_DECODE, &urlc) )
+-        throw Win32Exception();
++        throw Win32Exception("InternetCrackUrl");
+ 
+     InetHandle inet = InternetOpen
+                       (
+@@ -213,7 +225,7 @@ void DownloadFile(const std::string& url
+                           INTERNET_FLAG_ASYNC // dwFlags
+                       );
+     if ( !inet )
+-        throw Win32Exception();
++        throw Win32Exception("InternetOpen");
+ 
+     DWORD dwOption = HTTP_PROTOCOL_FLAG_HTTP2;
+     InternetSetOptionW(inet, INTERNET_OPTION_ENABLE_HTTP_PROTOCOL, &dwOption, sizeof(dwOption));
+@@ -260,11 +272,14 @@ void DownloadFile(const std::string& url
+     else
+     {
+         if (GetLastError() != ERROR_IO_PENDING)
+-            throw Win32Exception();
++            throw Win32Exception("InternetOpenUrl");
+     }
+ 
+     WaitUntilSignaledWithTerminationCheck(context.eventRequestComplete, onThread);
+ 
++    if (context.lastError != ERROR_SUCCESS)
++        throw MakeInetError("update request failed", context.lastError);
++
+     // Check returned status code - we need to detect 404 instead of
+     // downloading the human-readable 404 page:
+     DWORD statusCode;
+@@ -343,7 +358,7 @@ void DownloadFile(const std::string& url
+         if (!InternetReadFileEx(conn, &ibuf, IRF_ASYNC | IRF_NO_WAIT, NULL))
+         {
+             if (GetLastError() != ERROR_IO_PENDING)
+-                throw Win32Exception();
++                throw Win32Exception("InternetReadFileEx");
+ 
+             WaitUntilSignaledWithTerminationCheck(context.eventRequestComplete, onThread);
+             continue;
+@@ -352,7 +367,7 @@ void DownloadFile(const std::string& url
+         if (ibuf.dwBufferLength == 0)
+         {
+             if (context.lastError != ERROR_SUCCESS)
+-                throw Win32Exception();
++                throw MakeInetError("download read failed", context.lastError);
+             else
+                 break; // all of the file was downloaded
+         }
+--- a/third_party/winsparkle/src/ui.h
++++ b/third_party/winsparkle/src/ui.h
+@@ -29,14 +29,10 @@
+ #include "threads.h"
+ #include "appcast.h"
+ 
+-namespace winsparkle
+-{
++#include <string>
+ 
+-enum ErrorCode
++namespace winsparkle
+ {
+-    Err_Generic,
+-    Err_BadSignature
+-};
+ 
+ /**
+     The main UI thread.
+@@ -75,7 +71,7 @@ public:
+         (i.e. the user is manually checking for updates), "update error"
+         message is shown. Otherwise, does nothing.
+      */
+-    static void NotifyUpdateError(ErrorCode err = Err_Generic);
++    static void NotifyUpdateError(const std::string& message = std::string());
+ 
+     /**
+         Notifies the UI that a new version is available.
+--- /dev/null
++++ b/third_party/winsparkle/src/ui_headless.cpp
+@@ -0,0 +1,130 @@
++// Copyright 2026 The Helium Authors
++// You can use, redistribute, and/or modify this source code under
++// the terms of the GPL-3.0 license that can be found in the LICENSE file.
++
++#include <windows.h>
++
++#include <shellapi.h>
++
++#include <memory>
++#include <string>
++
++#include "appcast.h"
++#include "appcontroller.h"
++#include "settings.h"
++#include "threads.h"
++#include "ui.h"
++#include "updatedownloader.h"
++#include "utils.h"
++#include "winsparkle.h"
++
++namespace winsparkle {
++
++HINSTANCE UI::ms_hInstance = nullptr;
++
++namespace {
++
++CriticalSection g_downloaderCS;
++std::unique_ptr<UpdateDownloader> g_downloader;
++
++// Terminate and destroy any outstanding downloader. MUST NOT be called
++// from the downloader's own thread
++// (i.e. not from NotifyUpdateDownloaded/NotifyUpdateError).
++void StopDownloader() {
++  std::unique_ptr<UpdateDownloader> downloader;
++  {
++    CriticalSectionLocker lock(g_downloaderCS);
++    downloader = std::move(g_downloader);
++  }
++
++  if (downloader) {
++    downloader->TerminateAndJoin();
++  }
++}
++
++bool LaunchInstaller(const std::wstring& updateFile,
++                     const std::string& installerArguments) {
++  std::wstring wArgs;
++
++  SHELLEXECUTEINFO sei = {};
++  sei.cbSize = sizeof(sei);
++  sei.lpFile = updateFile.c_str();
++  sei.nShow = SW_SHOWDEFAULT;
++  sei.fMask = SEE_MASK_FLAG_NO_UI;
++
++  if (!installerArguments.empty()) {
++    wArgs = AnsiToWide(installerArguments);
++    sei.lpParameters = wArgs.c_str();
++  }
++
++  return ::ShellExecuteEx(&sei) != FALSE;
++}
++
++}  // anonymous namespace
++
++// static
++void UI::ShutDown() {
++  StopDownloader();
++}
++
++// static
++void UI::NotifyNoUpdates(bool) {
++  ApplicationController::NotifyUpdateNotFound();
++}
++
++// static
++void UI::NotifyUpdateError(const std::string& message) {
++  ApplicationController::SetLastUpdateError(message);
++  ApplicationController::NotifyUpdateError();
++}
++
++// static
++void UI::NotifyUpdateAvailable(const Appcast& info, bool) {
++  ApplicationController::NotifyUpdateFound();
++
++  if (!info.HasDownload()) {
++    return;
++  }
++
++  StopDownloader();
++  CriticalSectionLocker lock(g_downloaderCS);
++  g_downloader = std::make_unique<UpdateDownloader>(info);
++  g_downloader->Start();
++}
++
++// static
++void UI::NotifyDownloadProgress(size_t downloaded, size_t total) {
++  ApplicationController::NotifyDownloadProgress(downloaded, total);
++}
++
++// Runs in the UpdateDownloader thread context after the payload has been
++// downloaded and its EdDSA signature verified.
++// static
++void UI::NotifyUpdateDownloaded(const std::wstring& updateFile,
++                                const Appcast& appcast) {
++  ApplicationController::SetPendingUpdateEdDsaSignature(
++      appcast.enclosure.EdDsaSignature);
++
++  switch (ApplicationController::UserRunInstallerCallback(updateFile.c_str())) {
++    case 1:
++      break;
++    case WINSPARKLE_RETURN_ERROR:
++      NotifyUpdateError("the installer callback reported a failure");
++      break;
++    case 0:
++    default:
++      if (LaunchInstaller(updateFile, appcast.enclosure.InstallerArguments)) {
++        ApplicationController::RequestShutdown();
++      } else {
++        NotifyUpdateError("failed to launch the downloaded installer");
++      }
++      break;
++  }
++}
++
++// static
++void UI::ShowCheckingUpdates() {}
++// static
++void UI::AskForPermission() {}
++
++}  // namespace winsparkle
