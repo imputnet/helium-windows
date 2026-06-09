@@ -22,7 +22,7 @@
    }
  
    # Android and ChromeOS don't support multiple browser processes, so they don't
-@@ -4069,6 +4077,17 @@ static_library("browser") {
+@@ -4061,6 +4069,17 @@ static_library("browser") {
    }
  
    if (is_win) {
