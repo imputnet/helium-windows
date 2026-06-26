@@ -13,3 +13,9 @@ v8_symbol_level=0
 symbol_level=0
 enable_rust=true
 enable_mse_mpeg2ts_stream_parser=true
+
+# Google Password Manager and Sync support
+enable_sync=true
+enable_signin=true
+enable_dice_support=true
+google_build=true
