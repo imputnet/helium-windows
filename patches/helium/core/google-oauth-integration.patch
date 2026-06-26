@@ -1,0 +1,61 @@
+--- a/google_apis/google_api_keys.cc
++++ b/google_apis/google_api_keys.cc
+@@ -30,6 +30,10 @@
+ // You can create API keys in the Google API Console:
+ // https://console.cloud.google.com/
+ 
++// Note: For Helium Browser, set your own API keys via environment variables:
++// - GOOGLE_API_KEY
++// - GOOGLE_CLIENT_ID
++// - GOOGLE_CLIENT_SECRET
++
+ #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ 
+ // These are the OAuth2 credentials for Helium Browser.
+@@ -71,6 +75,35 @@ std::string GetAPIKey() {
+   return g_api_key;
+ }
+ 
++// Retrieve API key from environment or compiled constant
++std::string GetOAuthClientId() {
++  const char* env_client_id = getenv("GOOGLE_CLIENT_ID");
++  if (env_client_id && env_client_id[0] != '\0') {
++    return env_client_id;
++  }
++#if defined(GOOGLE_CLIENT_ID)
++  return GOOGLE_CLIENT_ID;
++#else
++  return "";
++#endif
++}
++
++std::string GetOAuthClientSecret() {
++  const char* env_client_secret = getenv("GOOGLE_CLIENT_SECRET");
++  if (env_client_secret && env_client_secret[0] != '\0') {
++    return env_client_secret;
++  }
++#if defined(GOOGLE_CLIENT_SECRET)
++  return GOOGLE_CLIENT_SECRET;
++#else
++  return "";
++#endif
++}
++
+ }  // namespace google_apis
+ 
+ #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+--- a/google_apis/google_api_keys.h
++++ b/google_apis/google_api_keys.h
+@@ -60,6 +60,12 @@ std::string GetAndCacheAPIKey();
+ // Gets the API key, which may be a default empty string.
+ std::string GetAPIKey();
+ 
++// Gets the OAuth 2.0 Client ID for Google services
++std::string GetOAuthClientId();
++
++// Gets the OAuth 2.0 Client Secret for Google services
++std::string GetOAuthClientSecret();
++
+ }  // namespace google_apis
+ 
+ #endif  // GOOGLE_APIS_GOOGLE_API_KEYS_H_
