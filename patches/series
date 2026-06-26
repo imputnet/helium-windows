@@ -32,3 +32,8 @@ helium/windows/updater/build-wiring.patch
 helium/windows/updater/register.patch
 helium/windows/updater/helper.patch
 helium/windows/updater/update-notifications.patch
+
+helium/core/enable-google-password-sync.patch
+helium/core/enable-google-signin.patch
+helium/core/enable-sync-service.patch
+helium/core/google-oauth-integration.patch
