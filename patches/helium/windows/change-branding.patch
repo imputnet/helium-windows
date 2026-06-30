@@ -18,7 +18,7 @@
  
  // Note: This list of indices must be kept in sync with the brand-specific
  // resource strings in chrome/installer/util/prebuild/create_string_rc.
-@@ -44,38 +44,38 @@ inline constexpr auto kInstallModes = st
+@@ -44,35 +44,35 @@ inline constexpr auto kInstallModes = st
              L"",  // Empty install_suffix for the primary install mode.
          .logo_suffix = L"",  // No logo suffix for the primary install mode.
          .app_guid =
@@ -44,10 +44,6 @@
 -            L"{7D2B3E1D-D096-4594-9D8F-A6667F12E0AC}",  // Active Setup
 +            L"{FB68A146-637A-48C2-A0C4-1565DE45FEBD}",  // Active Setup
                                                          // GUID.
-         .legacy_command_execute_clsid =
--            L"{A2DF06F9-A21A-44A8-8A99-8B9C84F29160}",  // CommandExecuteImpl
-+            L"{729D2994-A2D0-4A62-84F2-28105C0A3B83}",  // CommandExecuteImpl
-                                                         // CLSID.
 -        .toast_activator_clsid = {0x635EFA6F,
 +        .toast_activator_clsid = {0xE9852F6C,
                                    0x08D6,
@@ -67,7 +63,7 @@
                           {0x94, 0xb2, 0x5a, 0xfe, 0xc6, 0xfe, 0xd9,
                            0x3a}},  // IElevator IID and TypeLib
 -        // {BB19A0E5-00C6-4966-94B2-5AFEC6FED93A}.
-+        // {C89A04FF-8825-4629-B83E-77CC67D9CEED}.
++        // {C89A04FF-00C6-4966-94B2-5AFEC6FED93A}.
          .tracing_service_clsid = {0x83f69367,
                                    0x442d,
                                    0x447f,
