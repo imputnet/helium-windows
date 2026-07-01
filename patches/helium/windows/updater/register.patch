@@ -24,7 +24,7 @@
    if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kAppId) &&
 --- a/chrome/browser/lifetime/application_lifetime_desktop.cc
 +++ b/chrome/browser/lifetime/application_lifetime_desktop.cc
-@@ -17,6 +17,7 @@
+@@ -21,6 +21,7 @@
  #include "chrome/browser/background/glic/glic_background_mode_manager.h"
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/browser_process_platform_part.h"
@@ -32,7 +32,7 @@
  #include "chrome/browser/download/download_core_service.h"
  #include "chrome/browser/lifetime/application_lifetime.h"
  #include "chrome/browser/lifetime/browser_close_manager.h"
-@@ -50,6 +51,10 @@
+@@ -62,6 +63,10 @@
  #include "base/win/win_util.h"
  #endif  // BUILDFLAG(IS_WIN)
  
@@ -43,7 +43,7 @@
  #if BUILDFLAG(ENABLE_SESSION_SERVICE)
  #include "chrome/browser/sessions/session_data_service.h"
  #include "chrome/browser/sessions/session_data_service_factory.h"
-@@ -113,7 +118,21 @@ void AttemptRestartInternal(IgnoreUnload
+@@ -280,7 +285,21 @@ void AttemptRestartInternal(IgnoreUnload
        FROM_HERE, base::BindOnce(&ExitIgnoreUnloadHandlers));
  #else   // !BUILDFLAG(IS_CHROMEOS).
    // Set the flag to restore state after the restart.
