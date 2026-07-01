@@ -40,7 +40,7 @@
 +    *ciphertext = plaintext;
 +    return true;
 +  }
-+  
++
    DATA_BLOB input;
    input.pbData =
        const_cast<BYTE*>(reinterpret_cast<const BYTE*>(plaintext.data()));

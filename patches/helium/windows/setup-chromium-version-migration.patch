@@ -24,7 +24,7 @@
                << current_version;
 --- a/chrome/installer/setup/setup_main.cc
 +++ b/chrome/installer/setup/setup_main.cc
-@@ -1308,7 +1308,17 @@ InstallStatus InstallProductsHelper(Inst
+@@ -1326,7 +1326,17 @@ InstallStatus InstallProductsHelper(Inst
      if (!IsDowngradeAllowed(prefs)) {
        const ProductState* product_state =
            original_state.GetProductState(system_install);
@@ -44,7 +44,7 @@
          int message_id = IDS_INSTALL_HIGHER_VERSION_BASE;
 --- a/chrome/installer/setup/setup_util.cc
 +++ b/chrome/installer/setup/setup_util.cc
-@@ -684,6 +684,15 @@ base::FilePath GetTracingServicePath(con
+@@ -659,6 +659,15 @@ base::FilePath GetTracingServicePath(con
        .Append(kElevatedTracingServiceExe);
  }
  
@@ -60,7 +60,7 @@
  void AddUpdateDowngradeVersionItem(HKEY root,
                                     const base::Version& current_version,
                                     const base::Version& new_version,
-@@ -692,7 +701,8 @@ void AddUpdateDowngradeVersionItem(HKEY
+@@ -667,7 +676,8 @@ void AddUpdateDowngradeVersionItem(HKEY
    DCHECK(new_version.IsValid());
    const auto downgrade_version = InstallUtil::GetDowngradeVersion();
    const std::wstring client_state_key = install_static::GetClientStateKeyPath();
@@ -70,7 +70,7 @@
      // This is a downgrade. Write the value if this is the first one (i.e., no
      // previous value exists). Otherwise, leave any existing value in place.
      if (!downgrade_version) {
-@@ -700,8 +710,10 @@ void AddUpdateDowngradeVersionItem(HKEY
+@@ -675,8 +685,10 @@ void AddUpdateDowngradeVersionItem(HKEY
            root, client_state_key, KEY_WOW64_32KEY, kRegDowngradeVersion,
            base::ASCIIToWide(current_version.GetString()), true);
      }
