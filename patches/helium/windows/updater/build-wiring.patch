@@ -134,6 +134,16 @@
              ],
              "file_globs": [
                  "locales\\*.pak",
+--- a/third_party/expat/BUILD.gn
++++ b/third_party/expat/BUILD.gn
+@@ -12,6 +12,7 @@ expat_visibility = [
+   "//skia:*",
+   "//third_party/libjingle_xmpp:*",
+   "//third_party/wayland:*",
++  "//third_party/winsparkle",
+ ]
+ 
+ # On Linux, we implicitly already depend on expat via fontconfig;
 --- /dev/null
 +++ b/third_party/winsparkle/BUILD.gn
 @@ -0,0 +1,73 @@
