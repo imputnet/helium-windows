@@ -1,0 +1,31 @@
+--- a/components/sync/service/sync_service_impl.cc
++++ b/components/sync/service/sync_service_impl.cc
+@@ -100,7 +100,7 @@ bool SyncServiceImpl::IsFirstSetupComplete() const {
+ }
+ 
+ bool SyncServiceImpl::IsSyncFeatureEnabled() const {
+-  return false;
++  return user_settings_->IsSyncRequested();
+ }
+ 
+ bool SyncServiceImpl::IsSyncFeatureActive() const {
+@@ -150,7 +150,7 @@ bool SyncServiceImpl::IsEngineInitialized() const {
+ }
+ 
+ bool SyncServiceImpl::IsSetupInProgress() const {
+-  return false;
++  return !IsFirstSetupComplete() && user_settings_->IsInitialSyncFeatureSetupComplete();
+ }
+ 
+ base::CallbackListSubscription SyncServiceImpl::AddSyncStatusChangedCallback(
+--- a/components/sync/service/sync_user_settings.cc
++++ b/components/sync/service/sync_user_settings.cc
+@@ -45,7 +45,7 @@ bool SyncUserSettings::IsSyncRequested() const {
+ }
+ 
+ bool SyncUserSettings::IsSyncAllowedByPlatform() const {
+-  return false;
++  return true;
+ }
+ 
+ syncer::ModelTypeSet SyncUserSettings::GetChosenDataTypes() const {
