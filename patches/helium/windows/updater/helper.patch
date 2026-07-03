@@ -650,9 +650,9 @@
 +}  // namespace helium_updater
 --- a/chrome/installer/mini_installer/chrome.release
 +++ b/chrome/installer/mini_installer/chrome.release
-@@ -26,6 +26,7 @@ chrome_pwa_launcher.exe: %(VersionDir)s\
- chrome_wer.dll: %(VersionDir)s\
+@@ -27,6 +27,7 @@ chrome_wer.dll: %(VersionDir)s\
  d3dcompiler_47.dll: %(VersionDir)s\
+ elevation_service.exe: %(VersionDir)s\
  eventlog_provider.dll: %(VersionDir)s\
 +helium_update_helper.exe: %(VersionDir)s\
  icudtl.dat: %(VersionDir)s\
