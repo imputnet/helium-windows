@@ -10,6 +10,6 @@ use_sysroot=false
 dcheck_always_on=false
 blink_symbol_level=0
 v8_symbol_level=0
-symbol_level=0
+symbol_level=1
 enable_rust=true
 enable_mse_mpeg2ts_stream_parser=true
