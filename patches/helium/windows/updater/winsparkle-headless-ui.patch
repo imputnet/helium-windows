@@ -101,7 +101,7 @@
          Notifies the UI that a new version is available.
 --- /dev/null
 +++ b/third_party/winsparkle/src/ui_headless.cpp
-@@ -0,0 +1,130 @@
+@@ -0,0 +1,148 @@
 +// Copyright 2026 The Helium Authors
 +// You can use, redistribute, and/or modify this source code under
 +// the terms of the GPL-3.0 license that can be found in the LICENSE file.
@@ -118,6 +118,7 @@
 +#include "settings.h"
 +#include "threads.h"
 +#include "ui.h"
++#include "updatechecker.h"
 +#include "updatedownloader.h"
 +#include "utils.h"
 +#include "winsparkle.h"
@@ -130,6 +131,18 @@
 +
 +CriticalSection g_downloaderCS;
 +std::unique_ptr<UpdateDownloader> g_downloader;
++std::string g_downloadedVersion;
++
++bool UpdateAlreadyDownloaded(const std::string& version) {
++  CriticalSectionLocker lock(g_downloaderCS);
++  return !g_downloadedVersion.empty() &&
++         UpdateChecker::CompareVersions(version, g_downloadedVersion) <= 0;
++}
++
++void RememberDownloadedUpdate(const std::string& version) {
++  CriticalSectionLocker lock(g_downloaderCS);
++  g_downloadedVersion = version;
++}
 +
 +// Terminate and destroy any outstanding downloader. MUST NOT be called
 +// from the downloader's own thread
@@ -184,6 +197,10 @@
 +
 +// static
 +void UI::NotifyUpdateAvailable(const Appcast& info, bool) {
++  if (UpdateAlreadyDownloaded(info.Version)) {
++    return;
++  }
++
 +  ApplicationController::NotifyUpdateFound();
 +
 +  if (!info.HasDownload()) {
@@ -211,6 +228,7 @@
 +
 +  switch (ApplicationController::UserRunInstallerCallback(updateFile.c_str())) {
 +    case 1:
++      RememberDownloadedUpdate(appcast.Version);
 +      break;
 +    case WINSPARKLE_RETURN_ERROR:
 +      NotifyUpdateError("the installer callback reported a failure");
