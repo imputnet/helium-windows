@@ -72,7 +72,7 @@
  generate_allowlist_from_histograms_file("webui_name_variants") {
    namespace = "views_metrics"
    input_xml_file = "//tools/metrics/histograms/metadata/page/histograms.xml"
-@@ -3405,7 +3409,7 @@ static_library("ui") {
+@@ -3408,7 +3412,7 @@ static_library("ui") {
          "//chrome/browser/win/installer_downloader:prefs",
          "//chrome/updater/app/server/win:updater_legacy_idl",
        ]
