@@ -1,6 +1,6 @@
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4367,6 +4367,7 @@ static_library("browser") {
+@@ -4373,6 +4373,7 @@ static_library("browser") {
          "//components/helium_services",
          "//third_party/winsparkle",
        ]

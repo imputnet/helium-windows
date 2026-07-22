@@ -68,7 +68,7 @@
  </assembly>
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
-@@ -1303,7 +1303,7 @@ base::FilePath GetModulePath(std::wstrin
+@@ -1304,7 +1304,7 @@ base::FilePath GetModulePath(std::wstrin
    // executable's directory and return the path if it can be read. This is the
    // expected location of modules for proper installs.
    const base::FilePath module_path =
