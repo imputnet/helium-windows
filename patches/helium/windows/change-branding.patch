@@ -142,7 +142,7 @@
  CHROME_PATCH_FILE_SUFFIX = "_patch"  # prefixed by options.output_name
  
  # compressed full archive suffix, will be prefixed by options.output_name
-@@ -724,7 +724,7 @@ def _ParseOptions():
+@@ -732,7 +732,7 @@ def _ParseOptions():
          '{BSDIFF|ZUCCHINI}.')
      parser.add_option('-n',
                        '--output_name',

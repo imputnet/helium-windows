@@ -1,13 +1,13 @@
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4373,6 +4373,7 @@ static_library("browser") {
+@@ -1424,6 +1424,7 @@ source_set("core") {
          "//components/helium_services",
          "//third_party/winsparkle",
        ]
 +      data_deps = [ "//chrome/installer/helium_update_helper" ]
      }
  
-     libs += [
+     sources += [
 --- /dev/null
 +++ b/chrome/installer/helium_update_helper/BUILD.gn
 @@ -0,0 +1,57 @@
