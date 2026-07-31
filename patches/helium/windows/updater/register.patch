@@ -1,6 +1,6 @@
 --- a/chrome/browser/chrome_browser_main_win.cc
 +++ b/chrome/browser/chrome_browser_main_win.cc
-@@ -135,6 +135,10 @@
+@@ -138,6 +138,10 @@
  #include "chrome/browser/platform_experience/installer/installer_win.h"
  #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
  
@@ -11,7 +11,7 @@
  namespace {
  
  typedef HRESULT (STDAPICALLTYPE* RegisterApplicationRestartProc)(
-@@ -640,6 +644,10 @@ void ChromeBrowserMainPartsWin::PostProf
+@@ -643,6 +647,10 @@ void ChromeBrowserMainPartsWin::PostProf
    if (!is_initial_profile)
      return;
  

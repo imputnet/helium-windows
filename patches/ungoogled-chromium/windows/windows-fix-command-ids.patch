@@ -1,6 +1,6 @@
 --- a/chrome/app/chrome_command_ids.h
 +++ b/chrome/app/chrome_command_ids.h
-@@ -63,19 +63,19 @@
+@@ -74,19 +74,19 @@
  #define IDC_MAXIMIZE_WINDOW             34047
  #define IDC_ALL_WINDOWS_FRONT           34048
  #define IDC_NAME_WINDOW                 34049
@@ -24,7 +24,7 @@
  #define IDC_MOVE_WINDOW                 34053
  #define IDC_SIZE_WINDOW                 34054
  #endif // BUILDFLAG(IS_WIN)
-@@ -538,7 +538,7 @@
+@@ -540,7 +540,7 @@
  #define IDC_MEDIA_ROUTER_TOGGLE_MEDIA_REMOTING 51208
  
  // Context menu items for media toolbar button
