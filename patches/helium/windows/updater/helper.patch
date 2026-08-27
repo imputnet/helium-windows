@@ -1,6 +1,6 @@
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -1424,6 +1424,7 @@ source_set("core") {
+@@ -1439,6 +1439,7 @@ source_set("core") {
          "//components/helium_services",
          "//third_party/winsparkle",
        ]
