@@ -20,7 +20,7 @@
              VALUE "OriginalFilename", "@ORIGINAL_FILENAME@"
 --- a/chrome/app/main_dll_loader_win.cc
 +++ b/chrome/app/main_dll_loader_win.cc
-@@ -149,7 +149,7 @@ base::FilePath GetModulePath(std::wstrin
+@@ -150,7 +150,7 @@ base::FilePath GetModulePath(std::wstrin
    // executable's directory and return the path if it can be read. This is the
    // expected location of modules for proper installs.
    const base::FilePath module_path =
@@ -68,7 +68,7 @@
  </assembly>
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
-@@ -1312,7 +1312,7 @@ base::FilePath GetModulePath(std::wstrin
+@@ -1338,7 +1338,7 @@ base::FilePath GetModulePath(std::wstrin
    // executable's directory and return the path if it can be read. This is the
    // expected location of modules for proper installs.
    const base::FilePath module_path =
@@ -176,7 +176,7 @@
      install_list->AddSetRegValueWorkItem(reg_root, uninstall_reg,
 --- a/chrome/installer/setup/setup_main.cc
 +++ b/chrome/installer/setup/setup_main.cc
-@@ -561,7 +561,7 @@ installer::InstallStatus RenameChromeExe
+@@ -587,7 +587,7 @@ installer::InstallStatus RenameChromeExe
                                      WorkItem::MoveTreeOptions{});
  
    AddFinalizeUpdateWorkItems(original_state,

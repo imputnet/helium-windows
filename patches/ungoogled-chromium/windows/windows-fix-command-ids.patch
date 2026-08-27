@@ -1,8 +1,8 @@
 --- a/chrome/app/chrome_command_ids.h
 +++ b/chrome/app/chrome_command_ids.h
-@@ -74,19 +74,19 @@
+@@ -77,19 +77,19 @@
+ #define IDC_MINIMIZE_WINDOW             34046
  #define IDC_MAXIMIZE_WINDOW             34047
- #define IDC_ALL_WINDOWS_FRONT           34048
  #define IDC_NAME_WINDOW                 34049
 -#if BUILDFLAG(IS_CHROMEOS)
 +#if (0)
@@ -24,7 +24,7 @@
  #define IDC_MOVE_WINDOW                 34053
  #define IDC_SIZE_WINDOW                 34054
  #endif // BUILDFLAG(IS_WIN)
-@@ -540,7 +540,7 @@
+@@ -464,7 +464,7 @@
  #define IDC_MEDIA_ROUTER_TOGGLE_MEDIA_REMOTING 51208
  
  // Context menu items for media toolbar button
@@ -33,8 +33,8 @@
  #define IDC_MEDIA_TOOLBAR_CONTEXT_REPORT_CAST_ISSUE 51209
  #endif
  #define IDC_MEDIA_TOOLBAR_CONTEXT_SHOW_OTHER_SESSIONS 51210
-@@ -575,7 +575,7 @@
- #define IDC_CONTENT_CONTEXT_ACCESSIBILITY_LABELS 52411
+@@ -490,7 +490,7 @@
+ #define IDC_CONTENT_CONTEXT_ACCESSIBILITY_LABELS_TOGGLE 52410
  #define IDC_CONTENT_CONTEXT_ACCESSIBILITY_LABELS_TOGGLE_ONCE 52412
  
 -#if BUILDFLAG(IS_CHROMEOS)
