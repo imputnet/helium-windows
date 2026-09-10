@@ -27,5 +27,5 @@ outputs:
     description: Array of absolute path to files that should be signed
 
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'index.js'

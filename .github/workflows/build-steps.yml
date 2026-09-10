@@ -1,0 +1,300 @@
+name: Build Windows packages
+
+on:
+  workflow_call:
+    inputs:
+      arch:
+        required: true
+        type: string
+      runs-on:
+        required: true
+        type: string
+    outputs:
+      version:
+        description: Version shared by both architecture packages
+        value: ${{ jobs.package.outputs.version }}
+
+permissions:
+  contents: read
+
+env:
+  WINSPARKLE_ED_KEY: ${{ vars.WINSPARKLE_ED_KEY }}
+  WINSPARKLE_AUTHENTICODE_ORG: ${{ vars.WINSPARKLE_AUTHENTICODE_ORG }}
+
+jobs:
+  # Each job resumes the build artifact on a fresh runner. Later stages are
+  # skipped once compilation finishes; packaging still runs after those skips.
+  build-1:
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: false
+
+  build-2:
+    needs: build-1
+    if: needs.build-1.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-3:
+    needs: build-2
+    if: needs.build-2.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-4:
+    needs: build-3
+    if: needs.build-3.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-5:
+    needs: build-4
+    if: needs.build-4.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-6:
+    needs: build-5
+    if: needs.build-5.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-7:
+    needs: build-6
+    if: needs.build-6.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-8:
+    needs: build-7
+    if: needs.build-7.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-9:
+    needs: build-8
+    if: needs.build-8.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-10:
+    needs: build-9
+    if: needs.build-9.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-11:
+    needs: build-10
+    if: needs.build-10.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-12:
+    needs: build-11
+    if: needs.build-11.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-13:
+    needs: build-12
+    if: needs.build-12.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-14:
+    needs: build-13
+    if: needs.build-13.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  build-15:
+    needs: build-14
+    if: needs.build-14.outputs.finished == 'false'
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: true
+
+  package:
+    needs: build-15
+    if: ${{ !cancelled() && !failure() }}
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/package
+        id: package
+        with:
+          arch: ${{ inputs.arch }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          azure-signing-endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          azure-signing-account: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          azure-signing-certificate-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
