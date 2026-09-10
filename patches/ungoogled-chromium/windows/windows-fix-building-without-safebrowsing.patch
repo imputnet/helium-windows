@@ -64,6 +64,16 @@
    std::wstring cred_provider_gaia_id;
    std::wstring cred_provider_email;
  
+--- a/chrome/browser/ui/views/page_info/BUILD.gn
++++ b/chrome/browser/ui/views/page_info/BUILD.gn
+@@ -77,7 +77,6 @@
+     "safety_tip_page_info_bubble_view.cc",
+     "security_information_view.cc",
+     "star_rating_view.cc",
+-    "suspicious_site_bubble_view.cc",
+     "web_view_side_panel_view.cc",
+   ]
+ 
 --- a/components/safe_browsing/buildflags.gni
 +++ b/components/safe_browsing/buildflags.gni
 @@ -26,6 +26,7 @@ declare_args() {
