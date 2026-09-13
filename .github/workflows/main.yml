@@ -23,7 +23,13 @@ jobs:
         arch: [x86_64, arm64]
       fail-fast: false
     uses: ./.github/workflows/build-steps.yml
-    secrets: inherit
+    secrets:
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+      AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+      AZURE_SIGNING_CERTIFICATE_NAME: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}
     with:
       arch: ${{ matrix.arch }}
       runs-on: ${{ inputs.runner }}

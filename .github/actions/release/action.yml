@@ -11,10 +11,12 @@ runs:
       uses: actions/download-artifact@v4
       with:
         name: helium-x86_64
+        path: release-artifacts
     - name: Download arm package
       uses: actions/download-artifact@v4
       with:
         name: helium-arm64
+        path: release-artifacts
     - name: Create release notes
       shell: bash
       run: |
@@ -43,4 +45,4 @@ runs:
         name: ${{ inputs.version }}
         tag_name: ${{ inputs.version }}
         files: |
-          helium*
+          release-artifacts/helium*
