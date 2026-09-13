@@ -6,6 +6,7 @@ const glob = require('@actions/glob');
 
 const path = require('path');
 const fs = require('fs/promises');
+const os = require('os');
 const { existsSync } = require('fs');
 
 async function getFilesToSign() {
@@ -32,7 +33,7 @@ async function getFilesToSign() {
 }
 
 async function run() {
-    const started_at = Math.floor(new Date() / 1000);
+    const started_at = Number(process.env.HELIUM_JOB_STARTED_AT) || Math.floor(Date.now() / 1000);
 
     process.on('SIGINT', function() {
     })
@@ -56,8 +57,13 @@ async function run() {
     }
 
     const args = ['build.py', '--ci', String(started_at)]
-    if (process.env.RUNNER_ENVIRONMENT === 'github-hosted')
-        args.push('-j', '2');
+    if (process.env.HELIUM_BUILD_JOBS) {
+        args.push('-j', process.env.HELIUM_BUILD_JOBS);
+    } else if (process.env.RUNNER_ENVIRONMENT === 'github-hosted') {
+        const jobs = Math.max(1, Math.min(os.availableParallelism(),
+            Math.floor(os.freemem() / (3 * 1024 ** 3))));
+        args.push('-j', String(jobs));
+    }
 
     if (arm)
         args.push('--arm')
@@ -124,7 +130,11 @@ async function run() {
     }
     core.setOutput('files-to-sign', paths.join(','));
 
-    if (!gen_installer) {
+    const package_here = retCode === 0 && core.getBooleanInput('package_here') &&
+        Date.now() / 1000 - started_at < 5 * 60 * 60;
+    core.setOutput('package_here', package_here);
+
+    if (!gen_installer && !package_here && core.getBooleanInput('save_artifact')) {
         await exec.exec('7z', ['a', '-tzip', 'C:\\helium-windows\\artifacts.zip',
             'C:\\helium-windows\\build\\src', '-mx=3', '-mtc=on'], {ignoreReturnCode: true});
         for (let i = 0; i < 5; ++i) {

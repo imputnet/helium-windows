@@ -1,6 +1,9 @@
 name: Package Windows release
 description: Finish the build, sign binaries, create and sign the installer, and upload packages
 inputs:
+  from_artifact:
+    description: Restore the build tree from a previous job
+    default: true
   arch:
     description: Target architecture (x86_64 or arm64)
     required: true
@@ -34,7 +37,8 @@ runs:
       uses: ./.github/actions/stage
       with:
         arm: ${{ inputs.arch == 'arm64' }}
-        from_artifact: true
+        from_artifact: ${{ inputs.from_artifact }}
+        save_artifact: false
 
     - name: Check build completed
       if: steps.stage.outputs.finished != 'true'

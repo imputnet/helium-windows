@@ -4,6 +4,12 @@ inputs:
   from_artifact:
     description: If a previous stage already uploaded build artifacts, the stage will resume building
     required: true
+  package_here:
+    description: Package on this runner if compilation finishes with time to spare
+    default: false
+  save_artifact:
+    description: Save the build tree for another job
+    default: true
   arm:
     description: Build arm binary
     required: false
@@ -19,6 +25,8 @@ inputs:
 outputs:
   finished:
     description: If a previous stage already finished the build, the stage will set all output variables to the input ones and exit
+  package_here:
+    description: Compilation finished with enough time to package on this runner
   artifact_id:
     description: id of the build dir artifact
   version:
@@ -27,5 +35,5 @@ outputs:
     description: Array of absolute path to files that should be signed
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'index.js'

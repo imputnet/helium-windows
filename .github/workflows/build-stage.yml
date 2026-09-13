@@ -1,0 +1,66 @@
+name: Build Windows stage
+on:
+  workflow_call:
+    inputs:
+      arch:
+        required: true
+        type: string
+      runs-on:
+        required: true
+        type: string
+      from-artifact:
+        required: true
+        type: boolean
+    secrets:
+      AZURE_TENANT_ID:
+        required: true
+      AZURE_CLIENT_ID:
+        required: true
+      AZURE_CLIENT_SECRET:
+        required: true
+      AZURE_SIGNING_ENDPOINT:
+        required: true
+      AZURE_SIGNING_ACCOUNT:
+        required: true
+      AZURE_SIGNING_CERTIFICATE_NAME:
+        required: true
+    outputs:
+      finished:
+        value: ${{ jobs.build.outputs.finished }}
+      version:
+        value: ${{ jobs.build.outputs.version }}
+permissions:
+  contents: read
+env:
+  WINSPARKLE_ED_KEY: ${{ vars.WINSPARKLE_ED_KEY }}
+  WINSPARKLE_AUTHENTICODE_ORG: ${{ vars.WINSPARKLE_AUTHENTICODE_ORG }}
+  HELIUM_BUILD_JOBS: ${{ vars.HELIUM_BUILD_JOBS }}
+jobs:
+  build:
+    runs-on: ${{ inputs.runs-on }}
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+      version: ${{ steps.package.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/prepare-environment
+      - uses: ./.github/actions/stage
+        id: stage
+        with:
+          arm: ${{ inputs.arch == 'arm64' }}
+          from_artifact: ${{ inputs.from-artifact }}
+          package_here: true
+      - uses: ./.github/actions/package
+        id: package
+        if: steps.stage.outputs.package_here == 'true'
+        with:
+          from_artifact: false
+          arch: ${{ inputs.arch }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          azure-signing-endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          azure-signing-account: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          azure-signing-certificate-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_NAME }}

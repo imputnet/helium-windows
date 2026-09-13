@@ -3,6 +3,9 @@ description: Set up Python, the Windows SDK, the build directory, and stage depe
 runs:
   using: composite
   steps:
+    - name: Record job start
+      shell: pwsh
+      run: '"HELIUM_JOB_STARTED_AT=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" >> $env:GITHUB_ENV'
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
@@ -17,7 +20,11 @@ runs:
     - name: Init
       shell: pwsh
       run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
+    - name: Set up Node.js 24
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
     - name: Setup Stage
       shell: pwsh
-      run: npm install
+      run: npm ci
       working-directory: ./.github/actions/stage
