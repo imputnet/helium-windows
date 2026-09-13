@@ -46,8 +46,14 @@ jobs:
           submodules: true
           fetch-depth: 0
           fetch-tags: true
+      - name: Get release version
+        id: version
+        shell: bash
+        run: |
+          version=$(python3 helium-chromium/utils/helium_version.py --print --tree helium-chromium --platform-tree .)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/release
         with:
-          version: ${{ needs.build.outputs.version }}
+          version: ${{ steps.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

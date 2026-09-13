@@ -22,10 +22,6 @@ on:
         required: true
       AZURE_SIGNING_CERTIFICATE_NAME:
         required: true
-    outputs:
-      version:
-        description: Version shared by both architecture packages
-        value: ${{ jobs.build-1.outputs.version || jobs.build-2.outputs.version || jobs.build-3.outputs.version || jobs.build-4.outputs.version || jobs.build-5.outputs.version || jobs.build-6.outputs.version || jobs.build-7.outputs.version || jobs.build-8.outputs.version || jobs.build-9.outputs.version || jobs.build-10.outputs.version || jobs.build-11.outputs.version || jobs.build-12.outputs.version || jobs.build-13.outputs.version || jobs.build-14.outputs.version || jobs.build-15.outputs.version || jobs.package.outputs.version }}
 
 permissions:
   contents: read
@@ -185,10 +181,8 @@ jobs:
 
   package:
     needs: [build-1, build-2, build-3, build-4, build-5, build-6, build-7, build-8, build-9, build-10, build-11, build-12, build-13, build-14, build-15]
-    if: ${{ !cancelled() && !failure() && needs.build-1.outputs.version == '' && needs.build-2.outputs.version == '' && needs.build-3.outputs.version == '' && needs.build-4.outputs.version == '' && needs.build-5.outputs.version == '' && needs.build-6.outputs.version == '' && needs.build-7.outputs.version == '' && needs.build-8.outputs.version == '' && needs.build-9.outputs.version == '' && needs.build-10.outputs.version == '' && needs.build-11.outputs.version == '' && needs.build-12.outputs.version == '' && needs.build-13.outputs.version == '' && needs.build-14.outputs.version == '' && needs.build-15.outputs.version == '' }}
+    if: ${{ !cancelled() && !failure() && join(needs.*.outputs.version, '') == '' }}
     runs-on: ${{ inputs.runs-on }}
-    outputs:
-      version: ${{ steps.package.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
