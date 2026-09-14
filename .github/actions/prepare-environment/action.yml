@@ -1,0 +1,30 @@
+name: Prepare Windows build environment
+description: Set up Python, the Windows SDK, the build directory, and stage dependencies
+runs:
+  using: composite
+  steps:
+    - name: Record job start
+      shell: pwsh
+      run: '"HELIUM_JOB_STARTED_AT=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" >> $env:GITHUB_ENV'
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install Windows SDK 10.0.28000.0
+      shell: pwsh
+      run: |
+        if (Test-Path "${env:ProgramFiles(x86)}\Windows Kits\10\Include\10.0.28000.0\um\Windows.h") { exit 0 }
+        Invoke-WebRequest 'https://go.microsoft.com/fwlink/?linkid=2370315' -OutFile "$env:RUNNER_TEMP\winsdksetup.exe"
+        $installer = Start-Process "$env:RUNNER_TEMP\winsdksetup.exe" -ArgumentList '/quiet', '/norestart', '/features', '+' -Wait -PassThru
+        if ($installer.ExitCode -notin @(0, 3010)) { throw "Windows SDK installation failed: $($installer.ExitCode)" }
+    - name: Init
+      shell: pwsh
+      run: Copy-Item -Path . -Destination "C:\helium-windows" -Recurse
+    - name: Set up Node.js 24
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+    - name: Setup Stage
+      shell: pwsh
+      run: npm ci
+      working-directory: ./.github/actions/stage
