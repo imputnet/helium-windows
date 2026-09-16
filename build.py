@@ -15,13 +15,10 @@ Helium build script for Windows
 import sys
 import time
 import argparse
-import ast
-import hashlib
 import os
 import shutil
 import subprocess
 import ctypes
-import urllib.request
 from pathlib import Path
 from contextlib import chdir
 
@@ -114,43 +111,6 @@ def _make_tmp_paths():
     tmp_path = Path(os.environ['TEMP'])
     if not tmp_path.exists():
         tmp_path.mkdir()
-
-
-def _read_buildtools_dep(source_tree, name):
-    deps_module = ast.parse(
-        (source_tree / 'buildtools' / 'DEPS').read_text(encoding=ENCODING)
-    )
-    for statement in deps_module.body:
-        if not isinstance(statement, ast.Assign):
-            continue
-        if any(isinstance(target, ast.Name) and target.id == 'deps'
-               for target in statement.targets):
-            return ast.literal_eval(statement.value)[name]
-    raise RuntimeError('Unable to read buildtools dependency: {}'.format(name))
-
-
-def _download_buildtools_dep(source_tree, name):
-    dependency = _read_buildtools_dep(source_tree, name)
-    artifact = dependency['objects'][0]
-    output_path = source_tree / 'buildtools' / name / artifact['output_file']
-    if output_path.exists():
-        return
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = output_path.with_suffix(output_path.suffix + '.tmp')
-    url = 'https://storage.googleapis.com/{}/{}'.format(
-        dependency['bucket'], artifact['object_name']
-    )
-    try:
-        urllib.request.urlretrieve(url, temporary_path)
-        if hashlib.sha256(temporary_path.read_bytes()).hexdigest() != artifact['sha256sum']:
-            raise RuntimeError('Hash mismatch for {}'.format(output_path))
-        if temporary_path.stat().st_size != artifact['size_bytes']:
-            raise RuntimeError('Size mismatch for {}'.format(output_path))
-        temporary_path.replace(output_path)
-    except Exception:
-        temporary_path.unlink(missing_ok=True)
-        raise
 
 
 def main():
@@ -277,7 +237,15 @@ def main():
             _run_build_process(sys.executable, 'tools\\rust\\update_rust.py')
             _run_build_process(sys.executable, 'tools\\clang\\scripts\\update.py')
 
-        _download_buildtools_dep(source_tree, 'win-format')
+        cipd_cache = downloads_cache / 'cipd'
+        cipd_cache.mkdir(exist_ok=True)
+        cipd_env = os.environ.copy()
+        cipd_env['CIPD_CACHE_DIR'] = str(cipd_cache)
+        subprocess.run([
+            sys.executable,
+            str(_ROOT_DIR / 'helium-chromium' / 'utils' / 'install_cipd_deps.py'),
+            source_tree,
+        ], check=True, env=cipd_env)
 
         if not args.dev:
             # Apply patches
@@ -382,14 +350,10 @@ def main():
     # Enter source tree to run build commands
     os.chdir(source_tree)
 
-    if not args.ci or not os.path.exists('out\\Default\\gn.exe'):
-        # Run GN bootstrap
-        _run_build_process(
-            sys.executable, 'tools\\gn\\bootstrap\\bootstrap.py', '-o', 'out\\Default\\gn.exe',
-            '--skip-generate-buildfiles')
-
+    if not args.ci or not os.path.exists('out\\Default\\build.ninja'):
         # Run gn gen
-        _run_build_process('out\\Default\\gn.exe', 'gen', 'out\\Default', '--fail-on-unused-args')
+        _run_build_process(
+            'buildtools\\win\\gn.exe', 'gen', 'out\\Default', '--fail-on-unused-args')
 
     # Ninja commandline
     ninja_commandline = ['third_party\\ninja\\ninja.exe']
