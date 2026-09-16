@@ -7,6 +7,7 @@ is_debug=false
 proprietary_codecs=true
 target_cpu="x64"
 use_sysroot=false
+use_siso=true
 dcheck_always_on=false
 blink_symbol_level=0
 v8_symbol_level=0

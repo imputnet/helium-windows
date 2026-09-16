@@ -247,6 +247,12 @@ def main():
             source_tree,
         ], check=True, env=cipd_env)
 
+        # clone.py skips the gclient hook that creates the Siso backend config.
+        siso_backend_dir = source_tree / 'build/config/siso/backend_config'
+        if not (siso_backend_dir / 'backend.star').exists():
+            shutil.copyfile(siso_backend_dir / 'google.star',
+                            siso_backend_dir / 'backend.star')
+
         if not args.dev:
             # Apply patches
             # First, ungoogled-chromium-patches
@@ -356,7 +362,8 @@ def main():
             'buildtools\\win\\gn.exe', 'gen', 'out\\Default', '--fail-on-unused-args')
 
     # Ninja commandline
-    ninja_commandline = ['third_party\\ninja\\ninja.exe']
+    os.environ['SISO_PATH'] = str(source_tree / 'third_party/siso/cipd/siso.exe')
+    ninja_commandline = [sys.executable, 'third_party\\depot_tools\\autoninja.py']
     if args.thread_count is not None:
         ninja_commandline.append('-j')
         ninja_commandline.append(args.thread_count)
