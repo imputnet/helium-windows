@@ -132,9 +132,6 @@ ln -s /usr/bin/vim /usr/bin/vi
 	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
 1. Check the esbuild version in file `build/src/third_party/devtools-frontend/src/DEPS` and find the closest release in the [esbuild GitHub](https://github.com/evanw/esbuild/releases) to it.
 	* Example: `version:3@0.24.0.chromium.2` should be `0.24.0`
-1. Check the ninja version in file `build/src/third_party/devtools-frontend/src/DEPS` and find the closest release in the [ninja GitHub](https://github.com/ninja-build/ninja/releases/) to it.
-	1. Download the `ninja-win.zip` file.
-	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
 1. Check the [Git GitHub](https://github.com/git-for-windows/git/releases/) for the latest version of Git.
 	1. Get the SHA-256 checksum for `PortableGit-<version>-64-bit.7z.exe`.
 1. Check for commit hash changes of `src` submodule in `third_party/microsoft_dxheaders` (e.g. using GitHub `https://github.com/chromium/chromium/tree/<version>/third_party/microsoft_dxheaders`).
