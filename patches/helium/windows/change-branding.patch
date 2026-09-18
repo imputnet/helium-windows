@@ -131,6 +131,18 @@
  #endif
  
    // Fallback to current directory if getting the secure or temp directory
+--- a/chrome/installer/mini_installer/BUILD.gn
++++ b/chrome/installer/mini_installer/BUILD.gn
+@@ -161,7 +161,7 @@ action("mini_installer_archive") {
+   outputs = [
+-    "$root_out_dir/chrome.7z",
+-    "$root_out_dir/chrome.packed.7z",
++    "$root_out_dir/helium.7z",
++    "$root_out_dir/helium.packed.7z",
+     "$root_out_dir/setup.ex_",
+     packed_files_rc_file,
+   ]
+   args = [
 --- a/chrome/tools/build/win/create_installer_archive.py
 +++ b/chrome/tools/build/win/create_installer_archive.py
 @@ -25,7 +25,7 @@ ARCHIVE_DIR = "installer_archive"
