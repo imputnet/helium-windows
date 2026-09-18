@@ -108,7 +108,7 @@ async function run() {
         return;
     }
 
-    await exec.exec('python', ['-m', 'pip', 'install', 'httplib2==0.22.0', 'Pillow'], {
+    await exec.exec('python', ['-m', 'pip', 'install', 'httplib2==0.22.0', 'Pillow', 'clang-format'], {
         cwd: 'C:\\helium-windows',
         ignoreReturnCode: true
     });

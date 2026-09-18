@@ -324,6 +324,14 @@ def main():
             source_tree
         )
 
+    clang_format = shutil.which('clang-format')
+    if not clang_format:
+        parser.error('clang-format not found on PATH; run python -m pip install clang-format')
+    formatter = source_tree / 'buildtools/win-format/clang-format.exe'
+    formatter.parent.mkdir(parents=True, exist_ok=True)
+    formatter.unlink(missing_ok=True)
+    formatter.symlink_to(clang_format)
+
     if not args.ci or not (source_tree / 'out/Default').exists():
         # Output args.gn
         (source_tree / 'out/Default').mkdir(parents=True)
