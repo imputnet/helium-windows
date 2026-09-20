@@ -1,6 +1,6 @@
 --- a/build/config/siso/windows.star
 +++ b/build/config/siso/windows.star
-@@ -7,18 +7,26 @@
+@@ -7,10 +7,17 @@
  load("@builtin//struct.star", "module")
  load("./clang_windows.star", "clang")
  load("./config.star", "config")
@@ -19,7 +19,7 @@
      return fg
  
  __handlers = {}
- __handlers.update(clang.handlers)
+@@ -18,7 +25,8 @@ __handlers.update(clang.handlers)
  
  def __step_config(ctx, step_config):
      config.check(ctx)
@@ -31,24 +31,22 @@
  chromium = module(
 --- a/build/toolchain/rbe.gni
 +++ b/build/toolchain/rbe.gni
-@@ -90,8 +90,14 @@
- # Siso native also uses rewrapper cfg file
- # to get remote platform property.
+@@ -93,6 +93,12 @@ if (use_siso && rbe_exec_root != rebase_
  use_reclient_cfgs =
      use_reclient || (use_remoteexec && (host_os == "win" || host_os == "mac"))
-+
+ 
 +# Windows NativeLink supplies its platform and compiler through Siso directly.
 +if (use_siso && host_os == "win" && getenv("SISO_REAPI_ADDRESS") != "") {
 +  use_reclient_cfgs = use_reclient
 +}
 +
- 
++
  declare_args() {
    # Set to the path of the RBE reclient configuration files.
    # Configuration file selection based on operating system.
 --- a/build/toolchain/win/setup_toolchain.py
 +++ b/build/toolchain/win/setup_toolchain.py
-@@ -323,6 +323,15 @@
+@@ -323,6 +323,15 @@ def main():
                  if windows_kits_match is not None:
                      windows_kits_dir = windows_kits_match.group(1)
  
@@ -66,7 +64,7 @@
              libpath_flags = ['-libpath:' + i for i in lib]
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
-@@ -239,8 +239,13 @@
+@@ -239,8 +239,13 @@ def DownloadAndUnpackPackage(
  ):
    cds_file = "%s-%s.tar.xz" % (package_file, version)
    cds_full_url = GetPlatformUrlPrefix(host_os) + cds_file
@@ -247,7 +245,7 @@
 +)
 --- a/build/config/win/visual_studio_version.gni
 +++ b/build/config/win/visual_studio_version.gni
-@@ -44,3 +44,10 @@
+@@ -44,3 +44,10 @@ if (visual_studio_path == "") {
  }
  
  visual_studio_version_logs = [ "windows_sdk_version=${windows_sdk_version}" ]
@@ -260,7 +258,7 @@
 +}
 --- a/third_party/dawn/third_party/directx-shader-compiler/BUILD.gn
 +++ b/third_party/dawn/third_party/directx-shader-compiler/BUILD.gn
-@@ -1307,7 +1307,7 @@
+@@ -1307,7 +1307,7 @@ template("dxcompiler_sourceset") {
        deps += [ ":dxcetw-h" ]
        include_dirs += [
          "$target_gen_dir/include/dxc/Tracing/dxcetw",  # dxcetw-h
@@ -269,7 +267,7 @@
        ]
      }
  
-@@ -2461,7 +2461,7 @@
+@@ -2461,7 +2461,7 @@ executable("dxc") {
  
    if (is_win) {
      include_dirs = [
