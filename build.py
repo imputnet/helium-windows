@@ -154,7 +154,6 @@ def main():
         '--ci',
         type=int,
     )
-    parser.add_argument('--build-installer', action='store_true')
     parser.add_argument(
         '--arm',
         action='store_true'
@@ -288,6 +287,22 @@ def main():
                 patch_bin_path=(source_tree / _PATCH_BIN_RELPATH)
             )
 
+        else:
+            print("Apply patches using quilt, then press Enter")
+            input()
+
+        # Download toolchains after the Windows extraction patch, before domain
+        # substitution rewrites the download URL shared by Rust and Clang.
+        with chdir(source_tree):
+            _run_build_process(sys.executable, 'tools\\rust\\update_rust.py')
+            _run_build_process(sys.executable, 'tools\\clang\\scripts\\update.py')
+            if os.environ.get('SISO_REAPI_ADDRESS'):
+                _run_build_process(
+                    sys.executable, 'tools\\clang\\scripts\\update.py',
+                    '--host-os=linux',
+                    '--output-dir=third_party/llvm-build/Release+Asserts_linux')
+
+        if not args.dev:
             # Substitute domains
             domain_substitution_list = _ROOT_DIR / 'helium-chromium' / 'domain_substitution.list'
             domain_substitution.apply_substitution(
@@ -307,19 +322,6 @@ def main():
 
             # Append translations
             i18n_apply.apply_translations(source_tree)
-        else:
-            print("Apply patches using quilt, then press Enter")
-            input()
-
-        # Download toolchains after applying the Windows extraction patch.
-        with chdir(source_tree):
-            _run_build_process(sys.executable, 'tools\\rust\\update_rust.py')
-            _run_build_process(sys.executable, 'tools\\clang\\scripts\\update.py')
-            if os.environ.get('SISO_REAPI_ADDRESS'):
-                _run_build_process(
-                    sys.executable, 'tools\\clang\\scripts\\update.py',
-                    '--host-os=linux',
-                    '--output-dir=third_party/llvm-build/Release+Asserts_linux')
 
         # Set version
         version_parts = helium_version.get_version_parts(_ROOT_DIR / 'helium-chromium', _ROOT_DIR)
@@ -414,13 +416,9 @@ def main():
     ninja_commandline.append('-C')
     ninja_commandline.append('out\\Default')
 
-    if not args.ci or not args.build_installer:
-        ninja_commandline.append('chrome')
-        ninja_commandline.append('chromedriver')
-        ninja_commandline.append('setup')
-
-    if not args.ci or args.build_installer:
-        ninja_commandline.append('mini_installer')
+    # Finish all release targets before signing. Siso can replace signed outputs
+    # if it is invoked again to build their dependents (the mini installer).
+    ninja_commandline.extend(['chrome', 'chromedriver', 'setup', 'mini_installer'])
 
     # Run ninja
     if args.ci:
@@ -430,9 +428,6 @@ def main():
         print(f"{timeout} seconds left for build")
 
         _run_build_process_timeout(*ninja_commandline, timeout=timeout)
-        if args.build_installer:
-            os.chdir(_ROOT_DIR)
-            subprocess.run([sys.executable, 'package.py'], check=True)
     else:
         _run_build_process(*ninja_commandline)
 
