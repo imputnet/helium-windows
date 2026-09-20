@@ -1,0 +1,280 @@
+--- a/build/config/siso/windows.star
++++ b/build/config/siso/windows.star
+@@ -7,18 +7,26 @@
+ load("@builtin//struct.star", "module")
+ load("./clang_windows.star", "clang")
+ load("./config.star", "config")
++load("./devtools_frontend.star", "devtools_frontend")
++load("./helium_windows.star", helium_clang = "clang")
++
++def compiler(ctx):
++    # NativeLink enables remote-generators on all three build hosts.
++    return helium_clang if config.get(ctx, "remote-generators") else clang
+ 
+ def __filegroups(ctx):
+     fg = {}
+-    fg.update(clang.filegroups(ctx))
++    fg.update(compiler(ctx).filegroups(ctx))
++    fg.update(devtools_frontend.filegroups(ctx))
+     return fg
+ 
+ __handlers = {}
+ __handlers.update(clang.handlers)
+ 
+ def __step_config(ctx, step_config):
+     config.check(ctx)
+-    step_config = clang.step_config(ctx, step_config)
++    step_config = compiler(ctx).step_config(ctx, step_config)
++    step_config = devtools_frontend.step_config(ctx, step_config)
+     return step_config
+ 
+ chromium = module(
+--- a/build/toolchain/rbe.gni
++++ b/build/toolchain/rbe.gni
+@@ -90,8 +90,14 @@
+ # Siso native also uses rewrapper cfg file
+ # to get remote platform property.
+ use_reclient_cfgs =
+     use_reclient || (use_remoteexec && (host_os == "win" || host_os == "mac"))
++
++# Windows NativeLink supplies its platform and compiler through Siso directly.
++if (use_siso && host_os == "win" && getenv("SISO_REAPI_ADDRESS") != "") {
++  use_reclient_cfgs = use_reclient
++}
++
+ 
+ declare_args() {
+   # Set to the path of the RBE reclient configuration files.
+   # Configuration file selection based on operating system.
+--- a/build/toolchain/win/setup_toolchain.py
++++ b/build/toolchain/win/setup_toolchain.py
+@@ -323,6 +323,15 @@
+                 if windows_kits_match is not None:
+                     windows_kits_dir = windows_kits_match.group(1)
+ 
++            if os.environ.get('SISO_REAPI_ADDRESS'):
++                chromium_dir = os.path.abspath(
++                    os.path.join(SCRIPT_DIR, '..', '..', '..'))
++                sys.path.insert(0, os.path.join(
++                    chromium_dir, 'buildtools', 'helium_rbe'))
++                from prepare import stage_includes
++                include = stage_includes(include, chromium_dir)
++                sys.path.pop(0)
++
+             include_I = ['/I' + i for i in include]
+             include_imsvc = ['-imsvc' + i for i in include]
+             libpath_flags = ['-libpath:' + i for i in lib]
+--- a/tools/clang/scripts/update.py
++++ b/tools/clang/scripts/update.py
+@@ -239,8 +239,13 @@
+ ):
+   cds_file = "%s-%s.tar.xz" % (package_file, version)
+   cds_full_url = GetPlatformUrlPrefix(host_os) + cds_file
++  path_prefixes = None
++  if sys.platform == 'win32' and host_os == 'linux' and package_file == 'clang':
++    # Remote Windows compiles only need the Linux compiler. Headers and runtimes
++    # come from the Windows package; avoid extracting Linux sysroot symlinks.
++    path_prefixes = ['bin/clang']
+   try:
+-    DownloadAndUnpack(cds_full_url, output_dir)
++    DownloadAndUnpack(cds_full_url, output_dir, path_prefixes=path_prefixes)
+   except urllib.error.URLError:
+     print('Failed to download prebuilt clang package %s' % cds_file)
+     print('Use build.py if you want to build locally.')
+--- /dev/null
++++ b/buildtools/helium_rbe/prepare.py
+@@ -0,0 +1,37 @@
++#!/usr/bin/env python3
++# Copyright 2026 The Helium Authors
++# Use of this source code is governed by the terms of the GPL-3.0 license in LICENSE.
++"""Stage locally installed Windows headers for remote compilation."""
++
++import hashlib
++import os
++from pathlib import Path
++import subprocess
++import sys
++
++
++def stage_includes(includes, source_tree):
++    """Mirror SDK includes into the input tree, copying only changed files."""
++    root = Path(source_tree).resolve() / 'third_party/helium_win_headers'
++    result = []
++    for include in includes:
++        source = Path(include).resolve()
++        if not source.is_dir():
++            raise RuntimeError(f'Windows include directory does not exist: {source}')
++        key = hashlib.sha256(str(source).casefold().encode()).hexdigest()[:16]
++        destination = root / key / source.name
++        destination.relative_to(root)
++        copy = subprocess.run([
++            'robocopy', str(source), str(destination), '/MIR', '/R:0', '/W:0',
++            '/NFL', '/NDL', '/NJH', '/NJS', '/NP',
++        ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
++        # Robocopy's codes 0-7 are successful copy/synchronization outcomes.
++        if copy.returncode >= 8:
++            raise RuntimeError(f'Failed to stage {source}: {copy.stdout}')
++        result.append(os.path.relpath(destination).replace('\\', '/'))
++    return result
++
++
++if __name__ == '__main__':
++    includes = stage_includes(sys.argv[1:], Path(__file__).resolve().parents[2])
++    print(Path(includes[0]).resolve().as_posix())
+--- /dev/null
++++ b/buildtools/helium_rbe/clang_remote_wrapper.py
+@@ -0,0 +1,71 @@
++#!/usr/bin/python3
++# Copyright 2026 The Helium Authors
++# Use of this source code is governed by the terms of the GPL-3.0 license in LICENSE.
++"""Run Windows clang-cl commands with the matching Linux Clang on NativeLink."""
++
++import json
++import os
++from pathlib import Path
++import subprocess
++import sys
++import tempfile
++
++
++def header_overlay(headers):
++    """Preserve Windows SDK's case-insensitive include lookup on Linux."""
++    roots = []
++    for directory, _, files in os.walk(headers):
++        roots.append({
++            'type': 'directory', 'name': str(Path(directory).resolve()),
++            'contents': [
++                {'type': 'file', 'name': name,
++                 'external-contents': str((Path(directory) / name).resolve())}
++                for name in files
++            ],
++        })
++    return {'version': 0, 'case-sensitive': False, 'use-external-names': False,
++            'roots': roots}
++
++
++def compiler_command(args, source_tree, overlay):
++    # Siso includes the original compiler in args[0].
++    clang_root = source_tree / 'third_party/llvm-build'
++    resources = list((clang_root / 'Release+Asserts/lib/clang').iterdir())
++    if len(resources) != 1:
++        raise RuntimeError('Expected one Windows Clang resource directory')
++    return [
++        str(clang_root / 'Release+Asserts_linux/bin/clang'),
++        '--driver-mode=cl', '--target=x86_64-pc-windows-msvc',
++        '--rsp-quoting=windows', '-resource-dir=' + str(resources[0]),
++        '-Xclang', '-ivfsoverlay', '-Xclang', str(overlay),
++        *args[1:],
++    ]
++
++
++def rewrite_include(line, source_tree):
++    """Map Clang's /showIncludes output back to paths Siso can find locally."""
++    prefix = 'Note: including file:'
++    if line.startswith(prefix):
++        name = Path(line[len(prefix):].strip())
++        if name.is_absolute() and name.is_relative_to(source_tree):
++            return prefix + ' ' + os.path.relpath(name).replace('\\', '/') + '\n'
++    return line
++
++
++def main():
++    source_tree = Path(__file__).resolve().parents[2]
++    with tempfile.TemporaryDirectory() as temporary:
++        overlay = Path(temporary) / 'windows-headers.json'
++        overlay.write_text(json.dumps(header_overlay(
++            source_tree / 'third_party/helium_win_headers')))
++        with subprocess.Popen(
++                compiler_command(sys.argv[1:], source_tree, overlay),
++                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
++                encoding='utf-8', errors='replace') as compiler:
++            for line in compiler.stdout:
++                sys.stdout.write(rewrite_include(line, source_tree))
++            return compiler.wait()
++
++
++if __name__ == '__main__':
++    sys.exit(main())
+--- /dev/null
++++ b/build/config/siso/helium_windows.star
+@@ -0,0 +1,47 @@
++# Copyright 2026 The Helium Authors
++# Use of this source code is governed by the terms of the GPL-3.0 license in LICENSE.
++"""Compile on Linux workers using the locally staged Windows SDK headers."""
++
++load("@builtin//struct.star", "module")
++load("./clang_all.star", "clang_all")
++load("./clang_exception.star", "clang_exception")
++
++def __filegroups(ctx):
++    groups = clang_all.filegroups(ctx)
++    # Siso misses SDK dependencies behind -imsvc and precomputed libc++ groups,
++    # so each compile needs the complete SDK.
++    groups["third_party/helium_win_headers:headers"] = {
++        "type": "glob",
++        "includes": ["*"],
++    }
++    return groups
++
++def __step_config(ctx, step_config):
++    step_config["input_deps"].update(clang_all.input_deps(ctx))
++    step_config["executables"].extend([
++        "buildtools/helium_rbe/clang_remote_wrapper.py",
++        "third_party/llvm-build/Release+Asserts_linux/bin/clang",
++    ])
++    for action in ["cc", "cxx"]:
++        step_config["rules"].append({
++            "name": "clang-cl/" + action,
++            "action": "(.*_)?" + action,
++            "command_prefix": "..\\..\\third_party\\llvm-build\\Release+Asserts\\bin\\clang-cl.exe",
++            "handler": "clang_compile",
++            "inputs": [
++                "buildtools/helium_rbe/clang_remote_wrapper.py",
++                "third_party/llvm-build/Release+Asserts_linux/bin/clang",
++                "third_party/llvm-build/Release+Asserts:headers",
++                "third_party/helium_win_headers:headers",
++            ],
++            "remote": True,
++            "remote_wrapper": "../../buildtools/helium_rbe/clang_remote_wrapper.py",
++            "timeout": "7m",
++        })
++    return clang_exception.step_config(ctx, step_config, False)
++
++clang = module(
++    "clang",
++    filegroups = __filegroups,
++    step_config = __step_config,
++)
+--- a/build/config/win/visual_studio_version.gni
++++ b/build/config/win/visual_studio_version.gni
+@@ -44,3 +44,10 @@
+ }
+ 
+ visual_studio_version_logs = [ "windows_sdk_version=${windows_sdk_version}" ]
++
++dia_sdk_include = "$visual_studio_path/DIA SDK/include"
++if (host_os == "win" && getenv("SISO_REAPI_ADDRESS") != "") {
++  dia_sdk_include = exec_script("//buildtools/helium_rbe/prepare.py",
++                                [ dia_sdk_include ],
++                                "trim string")
++}
+--- a/third_party/dawn/third_party/directx-shader-compiler/BUILD.gn
++++ b/third_party/dawn/third_party/directx-shader-compiler/BUILD.gn
+@@ -1307,7 +1307,7 @@
+       deps += [ ":dxcetw-h" ]
+       include_dirs += [
+         "$target_gen_dir/include/dxc/Tracing/dxcetw",  # dxcetw-h
+-        "$visual_studio_path/DIA SDK/include",  # Required for msvc builds
++        dia_sdk_include,  # Required for msvc builds
+       ]
+     }
+ 
+@@ -2461,7 +2461,7 @@
+ 
+   if (is_win) {
+     include_dirs = [
+-      "$visual_studio_path/DIA SDK/include",  # Required for msvc builds
++      dia_sdk_include,  # Required for msvc builds
+     ]
+   }
+ 

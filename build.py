@@ -113,6 +113,23 @@ def _make_tmp_paths():
         tmp_path.mkdir()
 
 
+def _configure_remoteexec(source_tree):
+    address = os.environ.get('SISO_REAPI_ADDRESS', '')
+    instance = os.environ.get('SISO_REAPI_INSTANCE') or 'main'
+    backend = ''
+    if address:
+        os.environ['SISO_REAPI_INSTANCE'] = instance
+        backend = 'nativelink.star'
+
+    subprocess.run([
+        sys.executable, str(source_tree / 'build/config/siso/configure_siso.py'),
+        '--rbe_instance=projects/rbe-chrome-untrusted/instances/default_instance',
+        f'--reapi_address={address}',
+        f'--reapi_instance={instance if address else ""}',
+        f'--reapi_backend_config_path={backend}',
+    ], check=True)
+
+
 def main():
     """CLI Entrypoint"""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -155,6 +172,8 @@ def main():
     # Set common variables
     source_tree = _ROOT_DIR / 'build' / 'src'
     downloads_cache = _ROOT_DIR / 'build' / 'download_cache'
+    if os.environ.get('SISO_REAPI_ADDRESS'):
+        os.environ['RBE_service_no_security'] = 'true'
 
     if not args.ci or not (source_tree / 'BUILD.gn').exists():
         # Setup environment
@@ -190,9 +209,12 @@ def main():
         # Retrieve windows downloads
         get_logger().info('Downloading required files...')
         download_info_win = downloads.DownloadInfo([_ROOT_DIR / 'downloads.ini'])
-        downloads.retrieve_downloads(download_info_win, downloads_cache, None, True)
+        components = list(download_info_win)
+        if not os.environ.get('SISO_REAPI_ADDRESS'):
+            components.remove('nodejs-linux')
+        downloads.retrieve_downloads(download_info_win, downloads_cache, components, True)
         try:
-            downloads.check_downloads(download_info_win, downloads_cache, None)
+            downloads.check_downloads(download_info_win, downloads_cache, components)
         except downloads.HashMismatchError as exc:
             get_logger().error('File checksum does not match: %s', exc)
             exit(1)
@@ -230,22 +252,20 @@ def main():
             shutil.rmtree(ESBUILD)
             ESBUILD.mkdir()
         get_logger().info('Unpacking downloads...')
-        downloads.unpack_downloads(download_info_win, downloads_cache, None, source_tree, extractors)
-
-        # Download rust & llvm toolchains
-        with chdir('build\\src'):
-            _run_build_process(sys.executable, 'tools\\rust\\update_rust.py')
-            _run_build_process(sys.executable, 'tools\\clang\\scripts\\update.py')
+        downloads.unpack_downloads(download_info_win, downloads_cache, components, source_tree, extractors)
 
         cipd_cache = downloads_cache / 'cipd'
         cipd_cache.mkdir(exist_ok=True)
         cipd_env = os.environ.copy()
         cipd_env['CIPD_CACHE_DIR'] = str(cipd_cache)
-        subprocess.run([
+        cipd_command = [
             sys.executable,
             str(_ROOT_DIR / 'helium-chromium' / 'utils' / 'install_cipd_deps.py'),
             source_tree,
-        ], check=True, env=cipd_env)
+        ]
+        if os.environ.get('SISO_REAPI_ADDRESS'):
+            cipd_command.append('--remote-exec')
+        subprocess.run(cipd_command, check=True, env=cipd_env)
 
         # clone.py skips the gclient hook that creates the Siso backend config.
         siso_backend_dir = source_tree / 'build/config/siso/backend_config'
@@ -291,6 +311,16 @@ def main():
             print("Apply patches using quilt, then press Enter")
             input()
 
+        # Download toolchains after applying the Windows extraction patch.
+        with chdir(source_tree):
+            _run_build_process(sys.executable, 'tools\\rust\\update_rust.py')
+            _run_build_process(sys.executable, 'tools\\clang\\scripts\\update.py')
+            if os.environ.get('SISO_REAPI_ADDRESS'):
+                _run_build_process(
+                    sys.executable, 'tools\\clang\\scripts\\update.py',
+                    '--host-os=linux',
+                    '--output-dir=third_party/llvm-build/Release+Asserts_linux')
+
         # Set version
         version_parts = helium_version.get_version_parts(_ROOT_DIR / 'helium-chromium', _ROOT_DIR)
         chrome_version_path = source_tree / "chrome" / "VERSION"
@@ -324,6 +354,8 @@ def main():
             source_tree
         )
 
+        _configure_remoteexec(source_tree)
+
     clang_format = shutil.which('clang-format')
     if not clang_format:
         parser.error('clang-format not found on PATH; run python -m pip install clang-format')
@@ -334,16 +366,20 @@ def main():
 
     if not args.ci or not (source_tree / 'out/Default').exists():
         # Output args.gn
-        (source_tree / 'out/Default').mkdir(parents=True)
+        (source_tree / 'out/Default').mkdir(parents=True, exist_ok=True)
         gn_flags = (_ROOT_DIR / 'helium-chromium' / 'flags.gn').read_text(encoding=ENCODING)
         gn_flags += '\n'
         windows_flags = (_ROOT_DIR / 'flags.windows.gn').read_text(encoding=ENCODING)
         if args.arm:
             windows_flags = windows_flags.replace('x64', 'arm64')
-        if args.tarball:
+        if args.tarball or args.dev:
             windows_flags += '\nchrome_pgo_phase=0\n'
 
-        if shutil.which('sccache'):
+        if os.environ.get('SISO_REAPI_ADDRESS'):
+            windows_flags += 'use_remoteexec = true\n'
+            # Precompiled modules are not portable across Windows/Linux hosts.
+            windows_flags += 'use_clang_modules = false\n'
+        elif shutil.which('sccache'):
             windows_flags += 'cc_wrapper = "sccache"\n'
 
         gn_flags += windows_flags
