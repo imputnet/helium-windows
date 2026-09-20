@@ -45,58 +45,35 @@ runs:
       shell: pwsh
       run: throw 'Build did not finish within the available stages'
 
-    - name: Sign Helium binaries
-      uses: azure/artifact-signing-action@v1
+    - name: Set up signing runtime
+      uses: actions/setup-dotnet@v4
       with:
-        azure-tenant-id: ${{ inputs.azure-tenant-id }}
-        azure-client-id: ${{ inputs.azure-client-id }}
-        azure-client-secret: ${{ inputs.azure-client-secret }}
-        endpoint: ${{ inputs.azure-signing-endpoint }}
-        signing-account-name: ${{ inputs.azure-signing-account }}
-        certificate-profile-name: ${{ inputs.azure-signing-certificate-name }}
-        files: ${{ steps.stage.outputs.files-to-sign }}
-        description: Helium
-        description-url: https://github.com/imputnet/helium-windows
+        dotnet-version: '8.0.x'
 
-    # we want a different description here, so sign it separately again
-    - name: Sign Helium update helper
-      uses: azure/artifact-signing-action@v1
-      with:
-        azure-tenant-id: ${{ inputs.azure-tenant-id }}
-        azure-client-id: ${{ inputs.azure-client-id }}
-        azure-client-secret: ${{ inputs.azure-client-secret }}
-        endpoint: ${{ inputs.azure-signing-endpoint }}
-        signing-account-name: ${{ inputs.azure-signing-account }}
-        certificate-profile-name: ${{ inputs.azure-signing-certificate-name }}
-        files: C:\helium-windows\build\src\out\Default\helium_update_helper.exe
-        description: Helium Update Helper
-        description-url: https://github.com/imputnet/helium-windows
-
-    - name: Build Helium installer and package
-      id: stage2
-      uses: ./.github/actions/stage
-      with:
-        gen_installer: true
-        arm: ${{ inputs.arch == 'arm64' }}
-        from_artifact: false
-
-    - name: Sign Helium installer
-      uses: azure/artifact-signing-action@v1
-      with:
-        azure-tenant-id: ${{ inputs.azure-tenant-id }}
-        azure-client-id: ${{ inputs.azure-client-id }}
-        azure-client-secret: ${{ inputs.azure-client-secret }}
-        endpoint: ${{ inputs.azure-signing-endpoint }}
-        signing-account-name: ${{ inputs.azure-signing-account }}
-        certificate-profile-name: ${{ inputs.azure-signing-certificate-name }}
-        files: C:\helium-windows\build\helium*-installer.exe
-        description: Helium Installer
-        description-url: https://github.com/imputnet/helium-windows
+    - name: Sign and package release
+      id: release
+      shell: pwsh
+      working-directory: C:\helium-windows
+      env:
+        TARGET_ARCH: ${{ inputs.arch == 'arm64' && 'arm64' || 'x64' }}
+        AZURE_TENANT_ID: ${{ inputs.azure-tenant-id }}
+        AZURE_CLIENT_ID: ${{ inputs.azure-client-id }}
+        AZURE_CLIENT_SECRET: ${{ inputs.azure-client-secret }}
+        AZURE_SIGNING_ENDPOINT: ${{ inputs.azure-signing-endpoint }}
+        AZURE_SIGNING_ACCOUNT: ${{ inputs.azure-signing-account }}
+        AZURE_SIGNING_CERTIFICATE_NAME: ${{ inputs.azure-signing-certificate-name }}
+      run: |
+        nuget install Microsoft.ArtifactSigning.Client -Version 1.0.128 -ExcludeVersion -NonInteractive
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        python -m pip install pywin32==311
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        python signing.py --arch $env:TARGET_ARCH --dlib Microsoft.ArtifactSigning.Client/bin/x64/Azure.CodeSigning.Dlib.dll
 
     - name: Upload artifacts
       id: stage3
       uses: ./.github/actions/stage
       with:
         upload_final: true
+        final_directory: ${{ steps.release.outputs.artifacts }}
         arm: ${{ inputs.arch == 'arm64' }}
         from_artifact: false
