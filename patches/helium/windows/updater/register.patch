@@ -32,9 +32,9 @@
  #include "chrome/browser/download/download_core_service.h"
  #include "chrome/browser/global_features.h"
  #include "chrome/browser/lifetime/application_lifetime.h"
-@@ -65,6 +66,10 @@
- #include "base/win/win_util.h"
- #endif  // BUILDFLAG(IS_WIN)
+@@ -69,6 +70,10 @@
+ #include "chrome/browser/shutdown_watchdog_mac.h"
+ #endif  // BUILDFLAG(IS_MAC)
  
 +#if BUILDFLAG(ENABLE_WINSPARKLE)
 +#include "chrome/browser/win/winsparkle_glue.h"
@@ -43,7 +43,7 @@
  #if BUILDFLAG(ENABLE_SESSION_SERVICE)
  #include "chrome/browser/sessions/session_data_service.h"
  #include "chrome/browser/sessions/session_data_service_factory.h"
-@@ -282,7 +287,21 @@ void AttemptRestartInternal(IgnoreUnload
+@@ -286,7 +291,21 @@ void AttemptRestartInternal(IgnoreUnload
        FROM_HERE, base::BindOnce(&ExitIgnoreUnloadHandlers));
  #else   // !BUILDFLAG(IS_CHROMEOS).
    // Set the flag to restore state after the restart.
