@@ -22,6 +22,7 @@ helium/windows/helium-versioning.patch
 helium/windows/setup-chromium-version-migration.patch
 helium/windows/bundle-elevation-service.patch
 helium/windows/rbe-linux-workers.patch
+helium/windows/honor-swiftshader-buildflag.patch
 
 helium/windows/updater/winsparkle-drop-3rdparty-deps.patch
 helium/windows/updater/winsparkle-api-extensions.patch

@@ -83,8 +83,8 @@
    }
 --- a/chrome/installer/mini_installer/chrome.release
 +++ b/chrome/installer/mini_installer/chrome.release
-@@ -39,6 +39,7 @@ vk_swiftshader.dll: %(VersionDir)s\
- vk_swiftshader_icd.json: %(VersionDir)s\
+@@ -37,6 +37,7 @@ optimization_guide_internal.dll: %(Versi
+ resources.pak: %(VersionDir)s\
  vulkan-1.dll: %(VersionDir)s\
  v8_context_snapshot.bin: %(VersionDir)s\
 +WinSparkle.dll: %(VersionDir)s\

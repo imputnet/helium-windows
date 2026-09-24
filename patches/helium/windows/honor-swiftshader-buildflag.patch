@@ -1,0 +1,114 @@
+--- a/ui/gl/BUILD.gn
++++ b/ui/gl/BUILD.gn
+@@ -342,10 +342,6 @@ component("gl") {
+       "//ui/gfx/mojom:dxgi_info",
+     ]
+ 
+-    data_deps += [
+-      "//third_party/swiftshader/src/Vulkan:icd_file",
+-      "//third_party/swiftshader/src/Vulkan:swiftshader_libvulkan",
+-    ]
+     if (!use_static_angle) {
+       data_deps += [
+         "//third_party/angle:libEGL",
+--- a/chrome/installer/mini_installer/BUILD.gn
++++ b/chrome/installer/mini_installer/BUILD.gn
+@@ -200,6 +200,12 @@ action("mini_installer_archive") {
+     "//third_party/icu:icudata",
+   ]
+ 
++  if (enable_swiftshader) {
++    args += [ "--include_swiftshader=1" ]
++  } else {
++    args += [ "--include_swiftshader=0" ]
++  }
++
+   if (enable_hidpi) {
+     args += [ "--enable_hidpi=1" ]
+   }
+--- a/chrome/installer/mini_installer/chrome.release
++++ b/chrome/installer/mini_installer/chrome.release
+@@ -35,8 +35,6 @@ libLiteRtWebGpuAccelerator.dll: %(Versio
+ notification_helper.exe: %(VersionDir)s\
+ optimization_guide_internal.dll: %(VersionDir)s\
+ resources.pak: %(VersionDir)s\
+-vk_swiftshader.dll: %(VersionDir)s\
+-vk_swiftshader_icd.json: %(VersionDir)s\
+ vulkan-1.dll: %(VersionDir)s\
+ v8_context_snapshot.bin: %(VersionDir)s\
+ #
+@@ -120,3 +118,7 @@ snapshot_blob.bin: %(VersionDir)s\
+ # do not want to include them in the installer.
+ dxcompiler.dll: %(VersionDir)s\
+ dxil.dll: %(VersionDir)s\
++
++[SWIFTSHADER]
++vk_swiftshader.dll: %(VersionDir)s\
++vk_swiftshader_icd.json: %(VersionDir)s\
+--- a/chrome/tools/build/win/create_installer_archive.py
++++ b/chrome/tools/build/win/create_installer_archive.py
+@@ -138,6 +138,7 @@ def CopyAllFilesToStagingDir(
+     component_build,
+     component_ffmpeg_build,
+     verbose,
++    include_swiftshader="1",
+ ):
+     """Copies the files required for installer archive.
+     Copies all common files required for various distributions of Chromium and
+@@ -165,6 +166,11 @@ def CopyAllFilesToStagingDir(
+             config, 'SNAPSHOTBLOB', staging_dir, build_dir, verbose
+         )
+ 
++    if include_swiftshader == '1' and config.has_section('SWIFTSHADER'):
++        CopySectionFilesToStagingDir(
++            config, 'SWIFTSHADER', staging_dir, build_dir, verbose
++        )
++
+     if include_dxc == '1':
+         CopySectionFilesToStagingDir(
+             config, 'DXC', staging_dir, build_dir, verbose
+@@ -730,6 +736,7 @@ def main(options):
+         options.component_build,
+         options.component_ffmpeg_build,
+         options.verbose,
++        options.include_swiftshader,
+     )
+ 
+     if options.component_build == '1':
+@@ -894,6 +901,10 @@ def _ParseOptions():
+         help='Whether to include HiDPI resource files.',
+     )
+     parser.add_option(
++        '--include_swiftshader', choices=('0', '1'), default='1',
++        help='Whether to include the SwiftShader library and ICD manifest.',
++    )
++    parser.add_option(
+         '--use_static_angle',
+         default="False",
+         help='Whether ANGLE is statically linked.',
+--- a/third_party/angle/gni/angle.gni
++++ b/third_party/angle/gni/angle.gni
+@@ -406,6 +406,10 @@ declare_args() {
+   angle_trace_events_ignore_timestamp = is_android && angle_standalone
+ }
+ 
++if (build_with_chromium && !enable_swiftshader) {
++  angle_enable_swiftshader = false
++}
++
+ declare_args() {
+   angle_enable_cgl = angle_enable_gl && is_mac
+ 
+--- a/third_party/dawn/scripts/dawn_features.gni
++++ b/third_party/dawn/scripts/dawn_features.gni
+@@ -69,6 +69,10 @@ if (is_android || is_ios) {
+   }
+ }
+ 
++if (build_with_chromium && !enable_swiftshader) {
++  dawn_use_swiftshader = false
++}
++
+ declare_args() {
+   dawn_tests_use_angle = true
+ 
