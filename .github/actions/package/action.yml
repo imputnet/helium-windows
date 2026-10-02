@@ -69,6 +69,18 @@ runs:
         if ($LASTEXITCODE) { exit $LASTEXITCODE }
         python signing.py --arch $env:TARGET_ARCH --dlib Microsoft.ArtifactSigning.Client/bin/x64/Azure.CodeSigning.Dlib.dll
 
+    - name: Upload symbols
+      uses: actions/upload-artifact@v4
+      with:
+        name: helium-windows-${{ inputs.arch }}-symbols
+        path: |
+          C:\helium-windows\build\src\out\Default\*.pdb
+          C:\helium-windows\build\src\out\Default\*.exe
+          C:\helium-windows\build\src\out\Default\*.dll
+        if-no-files-found: error
+        retention-days: 4
+        overwrite: true
+
     - name: Upload artifacts
       id: stage3
       uses: ./.github/actions/stage
