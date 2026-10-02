@@ -1,0 +1,255 @@
+--- a/components/cdm/renderer/playready_key_system_info.h
++++ b/components/cdm/renderer/playready_key_system_info.h
+@@ -20,7 +20,9 @@ class PlayReadyKeySystemInfo : public me
+       media::SupportedCodecs sw_secure_codecs,
+       base::flat_set<media::EncryptionScheme> sw_secure_encryption_schemes,
+       media::SupportedCodecs hw_secure_codecs,
+-      base::flat_set<media::EncryptionScheme> hw_secure_encryption_schemes);
++      base::flat_set<media::EncryptionScheme> hw_secure_encryption_schemes,
++      bool sw_persistent_license = false,
++      bool hw_persistent_license = false);
+   ~PlayReadyKeySystemInfo() override;
+ 
+   std::string GetBaseKeySystemName() const override;
+@@ -42,6 +44,8 @@ class PlayReadyKeySystemInfo : public me
+   media::EmeFeatureSupport GetDistinctiveIdentifierSupport() const override;
+ 
+  private:
++  const bool sw_persistent_license_;
++  const bool hw_persistent_license_;
+   const media::SupportedCodecs sw_secure_codecs_;
+   const base::flat_set<media::EncryptionScheme> sw_secure_encryption_schemes_;
+   const media::SupportedCodecs hw_secure_codecs_;
+--- a/components/cdm/renderer/playready_key_system_info.cc
++++ b/components/cdm/renderer/playready_key_system_info.cc
+@@ -44,8 +44,12 @@ PlayReadyKeySystemInfo::PlayReadyKeySyst
+     media::SupportedCodecs sw_secure_codecs,
+     base::flat_set<media::EncryptionScheme> sw_secure_encryption_schemes,
+     media::SupportedCodecs hw_secure_codecs,
+-    base::flat_set<media::EncryptionScheme> hw_secure_encryption_schemes)
+-    : sw_secure_codecs_(sw_secure_codecs),
++    base::flat_set<media::EncryptionScheme> hw_secure_encryption_schemes,
++    bool sw_persistent_license,
++    bool hw_persistent_license)
++    : sw_persistent_license_(sw_persistent_license),
++      hw_persistent_license_(hw_persistent_license),
++      sw_secure_codecs_(sw_secure_codecs),
+       sw_secure_encryption_schemes_(std::move(sw_secure_encryption_schemes)),
+       hw_secure_codecs_(hw_secure_codecs),
+       hw_secure_encryption_schemes_(std::move(hw_secure_encryption_schemes)) {}
+@@ -135,7 +139,8 @@ EmeConfig::Rule PlayReadyKeySystemInfo::
+ 
+ EmeConfig::Rule PlayReadyKeySystemInfo::GetPersistentLicenseSessionSupport()
+     const {
+-  return EmeConfig::UnsupportedRule();
++  return GetConfigRuleForSupportedModes(sw_persistent_license_,
++                                        hw_persistent_license_);
+ }
+ 
+ EmeFeatureSupport PlayReadyKeySystemInfo::GetPersistentStateSupport() const {
+--- a/components/cdm/renderer/key_system_support_update.cc
++++ b/components/cdm/renderer/key_system_support_update.cc
+@@ -460,7 +460,13 @@ void AddPlayReady(const media::KeySystem
+ 
+   key_systems->emplace_back(std::make_unique<PlayReadyKeySystemInfo>(
+       sw_secure_codecs, std::move(sw_secure_encryption_schemes),
+-      hw_secure_codecs, std::move(hw_secure_encryption_schemes)));
++      hw_secure_codecs, std::move(hw_secure_encryption_schemes),
++      capability.sw_cdm_capability_or_status.has_value() &&
++          capability.sw_cdm_capability_or_status->session_types.contains(
++              CdmSessionType::kPersistentLicense),
++      capability.hw_cdm_capability_or_status.has_value() &&
++          capability.hw_cdm_capability_or_status->session_types.contains(
++              CdmSessionType::kPersistentLicense)));
+ }
+ #endif  // BUILDFLAG(ENABLE_PLAYREADY)
+ 
+--- a/media/cdm/win/media_foundation_cdm.cc
++++ b/media/cdm/win/media_foundation_cdm.cc
+@@ -594,8 +594,40 @@ void MediaFoundationCdm::LoadSession(
+     return;
+   }
+ 
+-  NOTIMPLEMENTED();
+-  promise->reject(Exception::NOT_SUPPORTED_ERROR, 0, "Load not supported");
++  if (session_type != CdmSessionType::kPersistentLicense ||
++      session_id.empty()) {
++    promise->reject(Exception::TYPE_ERROR, 0,
++                    "A persistent session ID is required");
++    return;
++  }
++  if (sessions_.contains(session_id)) {
++    promise->reject(Exception::INVALID_STATE_ERROR, 0,
++                    "Session is already loaded");
++    return;
++  }
++
++  auto session = std::make_unique<MediaFoundationCdmSession>(
++      uma_prefix_, session_message_cb_, session_keys_change_cb_,
++      session_expiration_update_cb_);
++  HRESULT hr = session->Initialize(mf_cdm_.Get(), session_type);
++  bool loaded = false;
++  if (SUCCEEDED(hr)) {
++    hr = session->Load(session_id, &loaded);
++  }
++  if (FAILED(hr)) {
++    promise->reject(Exception::INVALID_STATE_ERROR, hr, "Load session failed");
++    if (hr == DRM_E_TEE_INVALID_HWDRM_STATE) {
++      OnHardwareContextReset();
++    }
++    return;
++  }
++  if (!loaded) {
++    // NewSessionCdmPromise resolves an absent session as load() == false.
++    promise->resolve("");
++    return;
++  }
++  sessions_.emplace(session_id, std::move(session));
++  promise->resolve(session_id);
+ }
+ 
+ void MediaFoundationCdm::UpdateSession(
+--- a/media/cdm/win/media_foundation_cdm_session.h
++++ b/media/cdm/win/media_foundation_cdm_session.h
+@@ -57,7 +57,8 @@ class MEDIA_EXPORT MediaFoundationCdmSes
+                           const std::vector<uint8_t>& init_data,
+                           SessionIdCB session_id_cb);
+ 
+-  HRESULT Load(const std::string& session_id);
++  // A successful call with |loaded| false means no persisted session exists.
++  HRESULT Load(const std::string& session_id, bool* loaded);
+   HRESULT Update(const std::vector<uint8_t>& response);
+   HRESULT Close();
+   HRESULT Remove();
+@@ -76,6 +77,7 @@ class MEDIA_EXPORT MediaFoundationCdmSes
+   // Note: |this| could already been destructed if false is returned.
+   bool SetSessionId();
+ 
++  void OnSessionLoaded();
+   HRESULT UpdateExpirationIfNeeded();
+ 
+   const std::string uma_prefix_;
+--- a/media/cdm/win/media_foundation_cdm_session.cc
++++ b/media/cdm/win/media_foundation_cdm_session.cc
+@@ -12,6 +12,7 @@
+ #include "base/numerics/safe_conversions.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/task/bind_post_task.h"
++#include "base/task/sequenced_task_runner.h"
+ #include "base/win/scoped_co_mem.h"
+ #include "media/base/cdm_key_information.h"
+ #include "media/base/win/mf_helpers.h"
+@@ -210,12 +211,36 @@ HRESULT MediaFoundationCdmSession::Gener
+   return S_OK;
+ }
+ 
+-HRESULT MediaFoundationCdmSession::Load(const std::string& session_id) {
++HRESULT MediaFoundationCdmSession::Load(const std::string& session_id,
++                                        bool* loaded) {
+   DVLOG_FUNC(1);
+-  RETURN_IF_FAILED(WithUmaReported(E_NOTIMPL, "LoadSession"));
++  CHECK(session_id_.empty() && !session_id_cb_);
++  CHECK(loaded);
++  *loaded = false;
++  BOOL mf_loaded = FALSE;
++  RETURN_IF_FAILED(WithUmaReported(
++      mf_cdm_session_->Load(base::UTF8ToWide(session_id).c_str(), &mf_loaded),
++      "LoadSession"));
++  if (!mf_loaded) {
++    return S_OK;
++  }
++
++  session_id_ = session_id;
++  *loaded = true;
++  // The caller must register the session and resolve load() before its events.
++  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++      FROM_HERE, base::BindOnce(&MediaFoundationCdmSession::OnSessionLoaded,
++                                weak_factory_.GetWeakPtr()));
+   return S_OK;
+ }
+ 
++void MediaFoundationCdmSession::OnSessionLoaded() {
++  OnSessionKeysChange();
++  HRESULT hr = UpdateExpirationIfNeeded();
++  DLOG_IF(ERROR, FAILED(hr))
++      << "Failed to read loaded session expiration: " << hr;
++}
++
+ HRESULT
+ MediaFoundationCdmSession::Update(const std::vector<uint8_t>& response) {
+   DVLOG_FUNC(1);
+--- a/media/mojo/services/media_foundation_service.cc
++++ b/media/mojo/services/media_foundation_service.cc
+@@ -12,6 +12,7 @@
+ #include "base/feature_list.h"
+ #include "base/files/file_util.h"
+ #include "base/functional/bind.h"
++#include "base/functional/callback_helpers.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/metrics/histogram_macros.h"
+ #include "base/path_service.h"
+@@ -29,11 +30,13 @@
+ #include "media/base/content_decryption_module.h"
+ #include "media/base/encryption_scheme.h"
+ #include "media/base/key_system_capability.h"
++#include "media/base/key_system_names.h"
+ #include "media/base/key_systems.h"
+ #include "media/base/media_switches.h"
+ #include "media/base/video_codecs.h"
+ #include "media/base/win/media_foundation_package_runtime_locator.h"
+ #include "media/cdm/win/media_foundation_cdm_module.h"
++#include "media/cdm/win/media_foundation_cdm_session.h"
+ #include "media/cdm/win/media_foundation_cdm_util.h"
+ #include "media/media_buildflags.h"
+ #include "media/mojo/mojom/interface_factory.mojom.h"
+@@ -263,7 +266,9 @@ base::flat_set<EncryptionScheme> GetSupp
+ HRESULT CreateDummyMediaFoundationCdm(
+     ComPtr<IMFContentDecryptionModuleFactory> cdm_factory,
+     const std::string& key_system,
+-    bool is_hw_secure) {
++    bool is_hw_secure,
++    bool* supports_persistent_license) {
++  *supports_persistent_license = false;
+   CdmConfig cdm_config = {key_system, /*allow_distinctive_identifier=*/true,
+                           /*allow_persistent_state=*/true,
+                           /*use_hw_secure_codecs=*/is_hw_secure};
+@@ -289,6 +294,16 @@ HRESULT CreateDummyMediaFoundationCdm(
+                                      /*cdm_client_token=*/std::nullopt,
+                                      dummy_cdm_store_path_root, mf_cdm);
+   DLOG_IF(ERROR, FAILED(hr)) << __func__ << ": Failed for " << key_system;
++  if (SUCCEEDED(hr) && IsPlayReady(key_system)) {
++    MediaFoundationCdmSession session("Media.EME.PlayReady.Capability.",
++                                      base::DoNothing(), base::DoNothing(),
++                                      base::DoNothing());
++    if (SUCCEEDED(session.Initialize(mf_cdm.Get(),
++                                     CdmSessionType::kPersistentLicense))) {
++      *supports_persistent_license = true;
++      session.Close();
++    }
++  }
+   mf_cdm.Reset();
+ 
+   // Delete the dummy CDM store folder so we don't leave files behind. This may
+@@ -326,8 +341,10 @@ CdmCapabilityOrStatus GetCdmCapability(
+   // A codec query alone does not guarantee that a CDM can be created in the
+   // service sandbox. Check creation for the requested security level too.
+   HRESULT hresult = S_OK;
+-  if (FAILED(hresult = CreateDummyMediaFoundationCdm(cdm_factory, key_system,
+-                                                     is_hw_secure))) {
++  bool supports_persistent_license = false;
++  if (FAILED(hresult = CreateDummyMediaFoundationCdm(
++                 cdm_factory, key_system, is_hw_secure,
++                 &supports_persistent_license))) {
+     DVLOG(1) << __func__
+              << ": CreateDummyMediaFoundationCdm() failed with hresult="
+              << hresult;
+@@ -540,6 +557,9 @@ CdmCapabilityOrStatus GetCdmCapability(
+   // IsTypeSupported does not support session type yet. So just use temporary
+   // session which is required by EME spec.
+   capability.session_types.insert(CdmSessionType::kTemporary);
++  if (supports_persistent_license) {
++    capability.session_types.insert(CdmSessionType::kPersistentLicense);
++  }
+ 
+   auto uma_name = "Media.EME.MediaFoundationService." +
+                   GetKeySystemNameForUMA(key_system, is_hw_secure) +
