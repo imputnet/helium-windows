@@ -1,0 +1,42 @@
+From 318b4d5b87eea1bf96a3d572fa212a556f18fda9 Mon Sep 17 00:00:00 2001
+From: jj <jj@imput.net>
+Date: Tue, 29 Sep 2026 01:49:59 -0700
+Subject: [PATCH] media: Cache video size only after successful MF resize
+
+The renderer records a video size before asking MF to apply it. If that
+call fails, a later request for the same size returns early as though
+the resize succeeded, leaving the native video geometry out of date.
+
+Update the cached size only after UpdateVideoStream succeeds.
+A failed resize can then be retried with the same dimensions.
+
+Bug: None
+Change-Id: I21f5a689427cae6c3ebe08a153ff813be4701d29
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8463949
+Reviewed-by: Sangbaek Park <sangbaekpark@chromium.org>
+Commit-Queue: jj <jj@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1706868}
+---
+
+--- a/media/renderers/win/media_foundation_renderer.cc
++++ b/media/renderers/win/media_foundation_renderer.cc
+@@ -1267,8 +1267,6 @@ HRESULT MediaFoundationRenderer::UpdateV
+     return S_OK;
+   }
+ 
+-  current_video_rect_size_ = rect_size;
+-
+   ComPtr<IMFMediaEngineEx> mf_media_engine_ex;
+   RETURN_IF_FAILED(mf_media_engine_.As(&mf_media_engine_ex));
+ 
+@@ -1283,6 +1281,10 @@ HRESULT MediaFoundationRenderer::UpdateV
+   RETURN_IF_FAILED(mf_media_engine_ex->UpdateVideoStream(
+       /*pSrc=*/nullptr, &dest_rect, /*pBorderClr=*/nullptr));
+ 
++  // Cache only if size is applied. A failed update should not make a later
++  // request for the same size report success without updating Media Engine.
++  current_video_rect_size_ = rect_size;
++
+   // Set the start time for the rendered video frame detection.
+   RestartRenderedVideoFrameDetectionTimerInNotReported();
+ 

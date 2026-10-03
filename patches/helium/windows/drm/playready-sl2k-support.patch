@@ -1,0 +1,449 @@
+--- a/components/cdm/renderer/playready_key_system_info.h
++++ b/components/cdm/renderer/playready_key_system_info.h
+@@ -17,6 +17,8 @@ namespace cdm {
+ class PlayReadyKeySystemInfo : public media::KeySystemInfo {
+  public:
+   PlayReadyKeySystemInfo(
++      media::SupportedCodecs sw_secure_codecs,
++      base::flat_set<media::EncryptionScheme> sw_secure_encryption_schemes,
+       media::SupportedCodecs hw_secure_codecs,
+       base::flat_set<media::EncryptionScheme> hw_secure_encryption_schemes);
+   ~PlayReadyKeySystemInfo() override;
+@@ -40,6 +42,8 @@ class PlayReadyKeySystemInfo : public me
+   media::EmeFeatureSupport GetDistinctiveIdentifierSupport() const override;
+ 
+  private:
++  const media::SupportedCodecs sw_secure_codecs_;
++  const base::flat_set<media::EncryptionScheme> sw_secure_encryption_schemes_;
+   const media::SupportedCodecs hw_secure_codecs_;
+   const base::flat_set<media::EncryptionScheme> hw_secure_encryption_schemes_;
+ };
+--- a/chrome/common/media/cdm_registration.cc
++++ b/chrome/common/media/cdm_registration.cc
+@@ -347,7 +347,8 @@ void AddExternalClearKey(std::vector<con
+ void AddPlayReady(std::vector<content::CdmInfo>* cdms) {
+   DVLOG(1) << __func__;
+   if ((base::win::GetVersion() < base::win::Version::WIN11) ||
+-      !media::SupportMediaFoundationEncryptedPlayback()) {
++      (!media::SupportMediaFoundationSoftwareEncryptedPlayback() &&
++       !media::SupportMediaFoundationHardwareEncryptedPlayback())) {
+     DVLOG(1) << __func__ << ": Not adding PlayReady CdmInfo";
+     return;
+   }
+@@ -365,6 +366,18 @@ void AddPlayReady(std::vector<content::C
+            << " CdmType=" << kPlayReadyCdmType.ToString()
+            << " Version=" << playready_version_info->GetFileVersion();
+ 
++  cdms->emplace_back(kPlayReadyKeySystemRecommendationDefault,
++                     content::CdmInfo::Robustness::kSoftwareSecure,
++                     /*capability=*/std::nullopt,
++                     /*supports_sub_key_systems=*/true,
++                     kPlayReadyCdmDisplayName, kPlayReadyCdmType,
++                     playready_version_info->GetFileVersion(),
++                     /*path=*/base::FilePath());
++
++  if (!media::SupportMediaFoundationHardwareEncryptedPlayback()) {
++    return;
++  }
++
+   // Add PlayReady hardware secure CdmInfo - its capability will be
+   // filled by `CdmRegistryImpl::LazyInitializeHardwareSecureCapability()`.
+   // Path is empty since the CDM is not in a separate library.
+--- a/components/cdm/renderer/key_system_support_update.cc
++++ b/components/cdm/renderer/key_system_support_update.cc
+@@ -415,6 +415,20 @@ void AddExternalClearKey(const media::Ke
+ 
+ #if BUILDFLAG(IS_WIN)
+ #if BUILDFLAG(ENABLE_PLAYREADY)
++struct PlayReadyCapabilities {
++  SupportedCodecs codecs = media::EME_CODEC_NONE;
++  base::flat_set<media::EncryptionScheme> encryption_schemes;
++};
++
++PlayReadyCapabilities GetPlayReadyCapabilities(
++    const media::CdmCapabilityOrStatus& capability) {
++  if (!capability.has_value() ||
++      !capability->session_types.contains(CdmSessionType::kTemporary)) {
++    return {};
++  }
++  return {GetSupportedCodecs(*capability), capability->encryption_schemes};
++}
++
+ void AddPlayReady(const media::KeySystemCapability& capability,
+                   bool can_persist_data,
+                   KeySystemInfos* key_systems) {
+@@ -428,41 +442,25 @@ void AddPlayReady(const media::KeySystem
+     return;
+   }
+ 
+-  if (!media::SupportMediaFoundationEncryptedPlayback()) {
++  if (!media::SupportMediaFoundationSoftwareEncryptedPlayback() &&
++      !media::SupportMediaFoundationHardwareEncryptedPlayback()) {
+     DLOG(ERROR) << __func__
+                 << ": Media Foundation encrypted playback not supported.";
+     return;
+   }
+ 
+-  if (capability.sw_cdm_capability_or_status.has_value()) {
+-    DVLOG(2) << "Software secure PlayReady supported but not expected";
+-  }
+-
+-  // Codecs and encryption schemes.
+-  SupportedCodecs hw_secure_codecs = media::EME_CODEC_NONE;
+-  base::flat_set<::media::EncryptionScheme> hw_secure_encryption_schemes;
+-  if (!capability.hw_cdm_capability_or_status.has_value()) {
+-    DVLOG(2) << __func__ << ": Hardware secure PlayReady NOT supported";
+-    return;
+-  }
+-
+-  const auto& hw_secure_capability =
+-      capability.hw_cdm_capability_or_status.value();
+-  // For the default PlayReady key system, we support a codec only when it
+-  // supports clear lead.
+-  hw_secure_codecs = GetSupportedCodecs(hw_secure_capability);
+-  hw_secure_encryption_schemes =
+-      capability.hw_cdm_capability_or_status->encryption_schemes;
+-  if (!capability.hw_cdm_capability_or_status->session_types.contains(
+-          CdmSessionType::kTemporary)) {
+-    DVLOG(1) << "Temporary sessions must be supported for hardware secure "
+-                "PlayReady";
++  auto [sw_secure_codecs, sw_secure_encryption_schemes] =
++      GetPlayReadyCapabilities(capability.sw_cdm_capability_or_status);
++  auto [hw_secure_codecs, hw_secure_encryption_schemes] =
++      GetPlayReadyCapabilities(capability.hw_cdm_capability_or_status);
++  if (sw_secure_codecs == media::EME_CODEC_NONE &&
++      hw_secure_codecs == media::EME_CODEC_NONE) {
+     return;
+   }
+-  DVLOG(2) << __func__ << ": Hardware secure PlayReady supported";
+ 
+-  key_systems->emplace_back(new PlayReadyKeySystemInfo(
+-      hw_secure_codecs, hw_secure_encryption_schemes));
++  key_systems->emplace_back(std::make_unique<PlayReadyKeySystemInfo>(
++      sw_secure_codecs, std::move(sw_secure_encryption_schemes),
++      hw_secure_codecs, std::move(hw_secure_encryption_schemes)));
+ }
+ #endif  // BUILDFLAG(ENABLE_PLAYREADY)
+ 
+--- a/components/cdm/renderer/playready_key_system_info.cc
++++ b/components/cdm/renderer/playready_key_system_info.cc
+@@ -22,10 +22,32 @@ using media::SupportedCodecs;
+ 
+ namespace cdm {
+ 
++namespace {
++
++EmeConfig::Rule GetConfigRuleForSupportedModes(bool software_supported,
++                                               bool hardware_supported) {
++  if (software_supported && hardware_supported) {
++    return EmeConfig::SupportedRule();
++  }
++  if (software_supported) {
++    return EmeConfig{.hw_secure_codecs = EmeConfigRuleState::kNotAllowed};
++  }
++  if (hardware_supported) {
++    return EmeConfig{.hw_secure_codecs = EmeConfigRuleState::kRequired};
++  }
++  return EmeConfig::UnsupportedRule();
++}
++
++}  // namespace
++
+ PlayReadyKeySystemInfo::PlayReadyKeySystemInfo(
++    media::SupportedCodecs sw_secure_codecs,
++    base::flat_set<media::EncryptionScheme> sw_secure_encryption_schemes,
+     media::SupportedCodecs hw_secure_codecs,
+     base::flat_set<media::EncryptionScheme> hw_secure_encryption_schemes)
+-    : hw_secure_codecs_(hw_secure_codecs),
++    : sw_secure_codecs_(sw_secure_codecs),
++      sw_secure_encryption_schemes_(std::move(sw_secure_encryption_schemes)),
++      hw_secure_codecs_(hw_secure_codecs),
+       hw_secure_encryption_schemes_(std::move(hw_secure_encryption_schemes)) {}
+ 
+ PlayReadyKeySystemInfo::~PlayReadyKeySystemInfo() = default;
+@@ -49,12 +71,8 @@ bool PlayReadyKeySystemInfo::IsSupported
+   // associated initialization data type. KeySystems handles validating
+   // |init_data_type| x |container| pairings.
+ 
+-  // To make KeySystemConfigSelector::GetSupportedConfiguration work correctly,
+-  // use the hardware secure codecs since there are no supported software codecs
+-  // in Chromium. If software secure codecs (aka. codecs_) is used here when
+-  // the keysystem is "com.microsoft.playready.recommendation", then this will
+-  // always return false which is not correct when robustness=3000.
+-  const media::SupportedCodecs codecs = hw_secure_codecs_;
++  // Robustness selection separately restricts the codecs to the chosen mode.
++  const media::SupportedCodecs codecs = sw_secure_codecs_ | hw_secure_codecs_;
+ 
+   if (init_data_type == EmeInitDataType::WEBM) {
+     return (codecs & media::EME_CODEC_WEBM_ALL) != 0;
+@@ -71,24 +89,19 @@ bool PlayReadyKeySystemInfo::IsSupported
+ 
+ EmeConfig::Rule PlayReadyKeySystemInfo::GetEncryptionSchemeConfigRule(
+     media::EncryptionScheme encryption_scheme) const {
+-  if (hw_secure_encryption_schemes_.count(encryption_scheme)) {
+-    return EmeConfig{.hw_secure_codecs = EmeConfigRuleState::kRequired};
+-  }
+-
+-  return EmeConfig::UnsupportedRule();
++  return GetConfigRuleForSupportedModes(
++      sw_secure_encryption_schemes_.contains(encryption_scheme),
++      hw_secure_encryption_schemes_.contains(encryption_scheme));
+ }
+ 
+ SupportedCodecs PlayReadyKeySystemInfo::GetSupportedCodecs() const {
+-  return media::EME_CODEC_NONE;
++  return sw_secure_codecs_;
+ }
+ 
+ SupportedCodecs PlayReadyKeySystemInfo::GetSupportedHwSecureCodecs() const {
+   return hw_secure_codecs_;
+ }
+ 
+-// `hw_secure_requirement` is not used here because the
+-// implementation only supports hardware secure PlayReady
+-// key systems. Software secure is not supported.
+ EmeConfig::Rule PlayReadyKeySystemInfo::GetRobustnessConfigRule(
+     const std::string& key_system,
+     EmeMediaType media_type,
+@@ -106,7 +119,17 @@ EmeConfig::Rule PlayReadyKeySystemInfo::
+     return EmeConfig{.hw_secure_codecs = EmeConfigRuleState::kRequired};
+   }
+ 
+-  // Software secure PlayReady is not supported in Chromium.
++  if (key_system == kPlayReadyKeySystemRecommendationDefault &&
++      (requested_robustness.empty() || requested_robustness == "2000")) {
++    // Audio can accompany a hardware-secure video configuration. Otherwise the
++    // default key system selects SL2000, including an audio-only request.
++    if (media_type == EmeMediaType::AUDIO && hw_secure_requirement &&
++        *hw_secure_requirement) {
++      return EmeConfig{.hw_secure_codecs = EmeConfigRuleState::kRequired};
++    }
++    return EmeConfig{.hw_secure_codecs = EmeConfigRuleState::kNotAllowed};
++  }
++
+   return EmeConfig::UnsupportedRule();
+ }
+ 
+--- a/content/browser/media/cdm_registry_impl.cc
++++ b/content/browser/media/cdm_registry_impl.cc
+@@ -565,13 +565,14 @@ void CdmRegistryImpl::LazyInitializeCapa
+   }
+ 
+ #if BUILDFLAG(IS_WIN)
+-  if (robustness == CdmInfo::Robustness::kHardwareSecure) {
+-    auto cdm_info =
+-        GetCdmInfo(key_system, CdmInfo::Robustness::kHardwareSecure);
++  if (robustness == CdmInfo::Robustness::kHardwareSecure ||
++      media::IsPlayReady(key_system)) {
++    auto cdm_info = GetCdmInfo(key_system, robustness);
+     DCHECK(cdm_info && !cdm_info->capability);
+     GetMediaFoundationServiceCdmCapability(
+         key_system, cdm_info->type, cdm_info->path,
+-        /*is_hw_secure=*/true, std::move(cdm_capability_cb));
++        robustness == CdmInfo::Robustness::kHardwareSecure,
++        std::move(cdm_capability_cb));
+   } else {
+     // kSoftwareSecure should have been determined from the manifest.
+     std::move(cdm_capability_cb)
+--- a/content/browser/media/media_interface_proxy.cc
++++ b/content/browser/media/media_interface_proxy.cc
+@@ -33,6 +33,7 @@
+ #include "content/public/common/cdm_info.h"
+ #include "content/public/common/content_client.h"
+ #include "media/base/cdm_context.h"
++#include "media/base/key_system_names.h"
+ #include "media/cdm/cdm_type.h"
+ #include "media/media_buildflags.h"
+ #include "media/mojo/buildflags.h"
+@@ -554,7 +555,9 @@ void MediaInterfaceProxy::CreateCdm(cons
+     }
+ 
+     auto cdm_info = CdmRegistryImpl::GetInstance()->GetCdmInfo(
+-        cdm_config.key_system, CdmInfo::Robustness::kHardwareSecure);
++        cdm_config.key_system, cdm_config.use_hw_secure_codecs
++                                   ? CdmInfo::Robustness::kHardwareSecure
++                                   : CdmInfo::Robustness::kSoftwareSecure);
+     if (cdm_info) {
+       DVLOG(2) << "Get MediaFoundationService with CDM path " << cdm_info->path;
+       auto* factory = GetMediaFoundationServiceInterfaceFactory(cdm_info->path);
+@@ -651,10 +654,9 @@ bool MediaInterfaceProxy::ShouldUseMedia
+     const media::CdmConfig& cdm_config) {
+   DVLOG(1) << __func__ << ": this=" << this << ", cdm_config=" << cdm_config;
+ 
+-  // TODO(xhwang): Refine this after we populate support info during EME
+-  // requestMediaKeySystemAccess() query, e.g. to check the `key_system` in
+-  // `cdm_config`.
+-  return cdm_config.use_hw_secure_codecs;
++  // Both PlayReady security levels use the Windows CDM and MF renderer.
++  return cdm_config.use_hw_secure_codecs ||
++         media::IsPlayReady(cdm_config.key_system);
+ }
+ #endif  // BUILDFLAG(IS_WIN)
+ 
+--- a/media/base/key_system_names.cc
++++ b/media/base/key_system_names.cc
+@@ -15,6 +15,11 @@ bool IsClearKey(std::string_view key_sys
+   return key_system == kClearKeyKeySystem;
+ }
+ 
++bool IsPlayReady(std::string_view key_system) {
++  return key_system == "com.microsoft.playready.recommendation" ||
++         key_system == "com.microsoft.playready.recommendation.3000";
++}
++
+ bool IsSubKeySystemOf(std::string_view key_system, std::string_view base) {
+   return base::StartsWith(key_system, base) &&
+          base::StartsWith(key_system.substr(base.size()), ".");
+--- a/media/base/key_system_names.h
++++ b/media/base/key_system_names.h
+@@ -24,6 +24,9 @@ MEDIA_EXPORT bool IsSubKeySystemOf(std::
+ // Returns true if |key_system| is External Clear Key, false otherwise.
+ MEDIA_EXPORT bool IsExternalClearKey(std::string_view key_system);
+ 
++// Returns true for the supported Windows PlayReady recommendation key systems.
++MEDIA_EXPORT bool IsPlayReady(std::string_view key_system);
++
+ }  // namespace media
+ 
+ #endif  // MEDIA_BASE_KEY_SYSTEM_NAMES_H_
+--- a/media/base/win/mf_feature_checks.cc
++++ b/media/base/win/mf_feature_checks.cc
+@@ -13,7 +13,8 @@ namespace media {
+ 
+ bool SupportMediaFoundationPlayback() {
+   return SupportMediaFoundationClearPlayback() ||
+-         SupportMediaFoundationEncryptedPlayback();
++         SupportMediaFoundationSoftwareEncryptedPlayback() ||
++         SupportMediaFoundationHardwareEncryptedPlayback();
+ }
+ 
+ bool SupportMediaFoundationClearPlayback() {
+@@ -21,7 +22,7 @@ bool SupportMediaFoundationClearPlayback
+          base::FeatureList::IsEnabled(kMediaFoundationClearPlayback);
+ }
+ 
+-bool SupportMediaFoundationEncryptedPlayback() {
++bool SupportMediaFoundationSoftwareEncryptedPlayback() {
+ #if defined(ARCH_CPU_X86_64)
+   // MediaFoundation encrypted playback is supported only on x86_64 (AMD64
+   // Windows) while Chrome bitness matches OS bitness. We won't let a x86_64
+@@ -31,13 +32,16 @@ bool SupportMediaFoundationEncryptedPlay
+   DVLOG(3) << __func__
+            << ": is_running_emulated_on_arm64=" << is_running_emulated_on_arm64;
+ 
+-  // TODO(xhwang): Also check whether software secure decryption is enabled and
+-  // supported by MediaFoundationCdm in the future.
+   return base::win::GetVersion() >= base::win::Version::WIN10_20H1 &&
+-         !is_running_emulated_on_arm64 && IsHardwareSecureDecryptionEnabled();
++         !is_running_emulated_on_arm64;
+ #else
+   return false;
+ #endif  // defined(ARCH_CPU_X86_64)
+ }
+ 
++bool SupportMediaFoundationHardwareEncryptedPlayback() {
++  return SupportMediaFoundationSoftwareEncryptedPlayback() &&
++         IsHardwareSecureDecryptionEnabled();
++}
++
+ }  // namespace media
+--- a/media/base/win/mf_feature_checks.h
++++ b/media/base/win/mf_feature_checks.h
+@@ -11,7 +11,12 @@ namespace media {
+ 
+ MEDIA_EXPORT bool SupportMediaFoundationPlayback();
+ MEDIA_EXPORT bool SupportMediaFoundationClearPlayback();
+-MEDIA_EXPORT bool SupportMediaFoundationEncryptedPlayback();
++// Platform eligibility for software encrypted playback, independent of the
++// hardware-decryption feature. CDM capabilities are queried separately.
++MEDIA_EXPORT bool SupportMediaFoundationSoftwareEncryptedPlayback();
++// Hardware encrypted playback additionally requires hardware decryption
++// enabled.
++MEDIA_EXPORT bool SupportMediaFoundationHardwareEncryptedPlayback();
+ 
+ }  // namespace media
+ 
+--- a/media/mojo/services/media_foundation_service.cc
++++ b/media/mojo/services/media_foundation_service.cc
+@@ -120,9 +120,11 @@ bool IsTypeSupported(ComPtr<IMFExtendedD
+                      bool is_hw_secure,
+                      const std::string& content_type) {
+   const base::TimeTicks start_time = base::TimeTicks::Now();
+-  // Force the use of the hardware based PlayReady key system.
++  // Query the requested security level rather than hardware support for both.
+   auto is_supported_or_error = IsMediaFoundationContentTypeSupported(
+-      mf_type_support, kPlayReadyKeySystemRecommendationHwSecure, content_type);
++      mf_type_support,
++      is_hw_secure ? kPlayReadyKeySystemRecommendationHwSecure : key_system,
++      content_type);
+   bool supported = is_supported_or_error.value_or(false);
+   // The above function may take seconds to run. Report UMA to understand the
+   // actual performance impact. Report UMA only for success cases.
+@@ -260,12 +262,11 @@ base::flat_set<EncryptionScheme> GetSupp
+ 
+ HRESULT CreateDummyMediaFoundationCdm(
+     ComPtr<IMFContentDecryptionModuleFactory> cdm_factory,
+-    const std::string& key_system) {
+-  // Set `use_hw_secure_codecs` to indicate this for hardware secure mode,
+-  // which typically requires identifier and persistent storage.
++    const std::string& key_system,
++    bool is_hw_secure) {
+   CdmConfig cdm_config = {key_system, /*allow_distinctive_identifier=*/true,
+                           /*allow_persistent_state=*/true,
+-                          /*use_hw_secure_codecs=*/true};
++                          /*use_hw_secure_codecs=*/is_hw_secure};
+ 
+   // Use a random CDM origin.
+   auto cdm_origin_id = base::UnguessableToken::Create();
+@@ -322,12 +323,11 @@ CdmCapabilityOrStatus GetCdmCapability(
+ 
+   const auto start_time = base::TimeTicks::Now();
+ 
+-  // For hardware secure decryption, even when the IsTypeSupported query says
+-  // it's supported, CDM creation could fail immediately. Therefore, create a
+-  // dummy CDM instance to detect this case.
++  // A codec query alone does not guarantee that a CDM can be created in the
++  // service sandbox. Check creation for the requested security level too.
+   HRESULT hresult = S_OK;
+-  if (is_hw_secure && FAILED(hresult = CreateDummyMediaFoundationCdm(
+-                                 cdm_factory, key_system))) {
++  if (FAILED(hresult = CreateDummyMediaFoundationCdm(cdm_factory, key_system,
++                                                     is_hw_secure))) {
+     DVLOG(1) << __func__
+              << ": CreateDummyMediaFoundationCdm() failed with hresult="
+              << hresult;
+@@ -616,14 +616,15 @@ void MediaFoundationService::IsKeySystem
+     return;
+   }
+ 
+-  // Use empty software secure capability as it is not used.
+-  auto sw_cdm_capability_or_status =
+-      base::unexpected(CdmCapabilityQueryStatus::kNoSupportedVideoCodec);
+-  auto hw_cdm_capability_or_status = GetCdmCapability(
++  auto capability = GetCdmCapability(
+       cdm_factory, key_system, is_hw_secure,
+       base::BindRepeating(&IsTypeSupported, mf_type_support, key_system));
+-  auto key_system_capability = KeySystemCapability(sw_cdm_capability_or_status,
+-                                                   hw_cdm_capability_or_status);
++  KeySystemCapability key_system_capability;
++  if (is_hw_secure) {
++    key_system_capability.hw_cdm_capability_or_status = std::move(capability);
++  } else {
++    key_system_capability.sw_cdm_capability_or_status = std::move(capability);
++  }
+   if (!key_system_capability.sw_cdm_capability_or_status.has_value() &&
+       !key_system_capability.hw_cdm_capability_or_status.has_value()) {
+     DVLOG(2)
+--- a/third_party/blink/renderer/platform/media/key_system_config_selector.cc
++++ b/third_party/blink/renderer/platform/media/key_system_config_selector.cc
+@@ -305,7 +305,9 @@ class KeySystemConfigSelector::ConfigSta
+           result && rules.hw_secure_codecs != EmeConfigRuleState::kRequired;
+     } else if (rule->hw_secure_codecs == EmeConfigRuleState::kRequired) {
+       result =
+-          result && rules.hw_secure_codecs != EmeConfigRuleState::kNotAllowed;
++          result && rules.hw_secure_codecs != EmeConfigRuleState::kNotAllowed &&
++          (!was_hardware_secure_decryption_preferences_requested_ ||
++           is_hardware_secure_decryption_allowed_);
+     }
+     return result;
+   }

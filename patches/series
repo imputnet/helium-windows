@@ -24,6 +24,11 @@ helium/windows/bundle-elevation-service.patch
 helium/windows/rbe-linux-workers.patch
 helium/windows/honor-swiftshader-buildflag.patch
 
+helium/windows/drm/mf-fix-resize-cache.patch
+helium/windows/drm/mf-fix-geometry.patch
+helium/windows/drm/playready-sl2k-support.patch
+helium/windows/drm/playready-persistent-license-support.patch
+
 helium/windows/updater/winsparkle-drop-3rdparty-deps.patch
 helium/windows/updater/winsparkle-api-extensions.patch
 helium/windows/updater/winsparkle-headless-ui.patch
