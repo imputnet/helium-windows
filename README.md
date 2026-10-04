@@ -2,6 +2,13 @@
 
 Windows packaging for [Helium](https://github.com/imputnet/helium).
 
+## Chrome tab migration helper
+
+The optional [Chrome Tabs to Helium helper](tools/chrome-tabs-to-helium/README.md)
+captures open tabs in Chrome and creates a local Windows launcher that opens them
+in Helium. It includes a Chrome extension, an installation guide, and a documented
+script model. It runs separately from the browser and does not transfer logins.
+
 ## Credits
 
 This repo is based on

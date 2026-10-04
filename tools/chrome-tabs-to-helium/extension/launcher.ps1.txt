@@ -1,0 +1,79 @@
+$ErrorActionPreference = 'Stop'
+
+function Quote-ProcessArgument([string]$Value) {
+    $escaped = [regex]::Replace($Value, '(\\*)"', '$1$1\"')
+    $escaped = [regex]::Replace($escaped, '(\\+)$', '$1$1')
+    return '"' + $escaped + '"'
+}
+
+function Find-Helium {
+    $candidates = @(
+        $env:LOCAL_TAB_TRANSFER_HELIUM,
+        (Join-Path $env:LOCALAPPDATA 'imput\Helium\Application\chrome.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Helium\Application\chrome.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Helium\helium.exe'),
+        (Join-Path $env:ProgramFiles 'Helium\Application\chrome.exe'),
+        (Join-Path $env:ProgramFiles 'Helium\helium.exe')
+    )
+    $programFilesX86 = ${env:ProgramFiles(x86)}
+    if ($programFilesX86) { $candidates += Join-Path $programFilesX86 'Helium\Application\chrome.exe' }
+    foreach ($candidate in $candidates) {
+        if ($candidate -and [IO.Path]::IsPathRooted($candidate) -and [IO.File]::Exists($candidate) -and [IO.Path]::GetExtension($candidate) -eq '.exe') {
+            return [IO.Path]::GetFullPath($candidate)
+        }
+    }
+    Add-Type -AssemblyName System.Windows.Forms
+    $picker = New-Object System.Windows.Forms.OpenFileDialog
+    $picker.Title = 'Select Helium browser (usually imput\Helium\Application\chrome.exe)'
+    $picker.Filter = 'Browser executable (*.exe)|*.exe'
+    if ($picker.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { throw 'No Helium executable selected. No tabs were opened.' }
+    return $picker.FileName
+}
+
+try {
+    $json = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('@@TAB_PAYLOAD@@'))
+    $snapshot = ConvertFrom-Json -InputObject $json
+    if ($snapshot.format -ne 'chrome-tabs-to-helium' -or $snapshot.version -ne 1 -or $snapshot.windows -isnot [array] -or $snapshot.windows.Count -eq 0 -or $snapshot.windows.Count -gt 2000) {
+        throw 'Invalid tab snapshot.'
+    }
+    $total = 0
+    foreach ($window in $snapshot.windows) {
+        if ($window.urls -isnot [array] -or $window.urls.Count -eq 0) { throw 'Invalid tab window.' }
+        foreach ($url in $window.urls) {
+            if ($url -isnot [string] -or $url.Length -gt 23000 -or $url -match '[\x00-\x20\x7f]') { throw 'Invalid tab URL.' }
+            if ($url -ne 'about:blank') {
+                $uri = $null
+                if (-not [Uri]::TryCreate($url, [UriKind]::Absolute, [ref]$uri) -or $uri.Scheme -notin @('http', 'https', 'file') -or ($uri.Scheme -ne 'file' -and -not $uri.Host)) {
+                    throw 'Unsupported tab URL.'
+                }
+            }
+            $total++
+        }
+    }
+    if ($total -gt 20000) { throw 'Too many tabs in one launcher.' }
+    $helium = Find-Helium
+    $opened = 0
+    foreach ($window in $snapshot.windows) {
+        # Keep each Chrome window together. Very large windows split at the Windows command-length limit.
+        $arguments = '--new-window'
+        foreach ($url in $window.urls) {
+            $argument = Quote-ProcessArgument $url
+            if ($arguments.Length + $argument.Length + $helium.Length + 8 -gt 28000) {
+                Start-Process -FilePath $helium -ArgumentList $arguments | Out-Null
+                $opened++
+                $arguments = '--new-window'
+            }
+            $arguments += ' ' + $argument
+        }
+        if ($arguments -ne '--new-window') {
+            Start-Process -FilePath $helium -ArgumentList $arguments | Out-Null
+            $opened++
+        }
+    }
+    Write-Host ('Sent {0} tabs to Helium in {1} new windows. Chrome tabs remain open.' -f $total, $opened)
+} catch {
+    Write-Host ('Could not finish opening tabs: ' + $_.Exception.Message) -ForegroundColor Red
+    Write-Host 'Tabs already opened, if any, remain open. Press Enter to close.'
+    [Console]::ReadLine() | Out-Null
+    exit 1
+}

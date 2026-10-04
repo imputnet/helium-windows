@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; connect-src 'none'">
+<title>Bring Chrome tabs to Helium</title>
+<style>
+:root { color-scheme:light dark; font:16px/1.55 system-ui,sans-serif; --bg:#f6f5f0; --fg:#232b27; --card:#fff; --line:#d6ddd7; --muted:#56645b; --accent:#176144; }
+* { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--fg); } main { max-width:760px; margin:48px auto; padding:0 24px; }
+h1 { font-size:36px; line-height:1.2; letter-spacing:-1px; margin:8px 0 16px; } h2 { font-size:21px; margin:0 0 12px; } .eyebrow { font-size:12px; letter-spacing:2px; font-weight:700; color:var(--accent); }
+section { margin:20px 0; padding:24px; border:1px solid var(--line); border-radius:12px; background:var(--card); } p { margin:10px 0; } ol { padding-left:24px; } li { margin:10px 0; } code { font-size:.95em; overflow-wrap:anywhere; } .hint, footer { color:var(--muted); font-size:14px; } a { color:var(--accent); } footer { margin-top:24px; }
+@media(prefers-color-scheme:dark) { :root { --bg:#151c18; --fg:#edf2ed; --card:#202922; --line:#415047; --muted:#b3c1b7; --accent:#82bd9c; } }
+@media(max-width:520px) { main { margin:24px auto; padding:0 16px; } section { padding:18px; } h1 { font-size:30px; } }
+</style></head><body><main>
+<span class="eyebrow">WINDOWS · CHROME TO HELIUM</span><h1>Bring your open tabs.</h1>
+<p>Add the helper to Chrome, save a launcher, then open it. Your Chrome tabs stay open.</p>
+<section><h2>1. Add the helper to Chrome</h2><ol>
+<li>Keep the Chrome windows you want to transfer open.</li>
+<li>In Chrome’s address bar, enter <code>chrome://extensions</code>.</li>
+<li>Turn on <strong>Developer mode</strong>, then click <strong>Load unpacked</strong>.</li>
+<li>Select the extracted folder containing <code>manifest.json</code>. In a source checkout, select <code>extension</code>.</li>
+<li>From Chrome’s extensions menu, pin <strong>Chrome Tabs to Helium</strong>.</li>
+</ol><p class="hint">If Chrome says the manifest is missing, select the folder where you can see <code>manifest.json</code>. Install this helper in Chrome only.</p></section>
+<section><h2>2. Save your tab launcher</h2><p>Click the helper icon. Check the tab and window counts, then choose <strong>Save Helium launcher</strong>.</p>
+<p>Save the <code>.cmd</code> file somewhere you can find it. Tabs are captured when you click Save.</p>
+<p class="hint">Normal windows in the current Chrome profile are included. Incognito and Chrome settings pages are excluded. Repeat in other profiles if needed.</p></section>
+<section><h2>3. Open the tabs in Helium</h2><p>Double-click the <code>.cmd</code> file you just saved. It detects Helium automatically. If asked, select Helium’s executable.</p>
+<p class="hint">The usual location is <code>%LOCALAPPDATA%\imput\Helium\Application\chrome.exe</code>. The executable is named <code>chrome.exe</code> even though it belongs to Helium.</p>
+<p>Each captured Chrome window opens as a new Helium window. Tab order and duplicates are kept.</p></section>
+<section><h2>Finish</h2><p>Check your tabs in Helium, then delete the launcher and remove the helper from Chrome if you no longer need it.</p>
+<p class="hint">Only run launchers you made with this helper. The file contains private URLs and executable code. It transfers links; websites may ask you to sign in again.</p></section>
+<footer>This is a local, optional migration helper. It does not install extensions automatically, change browser settings, or copy authentication. <a href="docs/install-flow.md">Flow details</a> · <a href="docs/script-model.md">Script model</a></footer>
+</main></body></html>

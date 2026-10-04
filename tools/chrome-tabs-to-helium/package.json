@@ -1,0 +1,10 @@
+{
+  "name": "chrome-tabs-to-helium",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/core.test.mjs && node tests/launcher.mjs",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "devDependencies": {"playwright-core": "1.58.2"}
+}
