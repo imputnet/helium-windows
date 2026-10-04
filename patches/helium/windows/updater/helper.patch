@@ -10,7 +10,7 @@
      sources += [
 --- /dev/null
 +++ b/chrome/installer/helium_update_helper/BUILD.gn
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,58 @@
 +# Copyright 2026 The Helium Authors
 +# You can use, redistribute, and/or modify this source code under
 +# the terms of the GPL-3.0 license that can be found in the LICENSE file.
@@ -32,7 +32,7 @@
 +
 +  sources = [
 +    "event_log.cc",
-+    "helium_update_helper.h",
++    "helium_update_helper_internal.h",
 +    "helium_update_helper.rc",
 +    "helium_update_helper_main.cc",
 +    "localized_strings.cc",
@@ -49,7 +49,8 @@
 +  deps = [
 +    ":helium_update_helper_manifest",
 +    "//base",
-+    "//chrome/installer/util:strings",
++    "//chrome/install_static:install_static_util",
++    "//chrome/installer/util:with_rc_strings",
 +    "//third_party/boringssl",
 +  ]
 +
@@ -176,7 +177,7 @@
 +#endif  // CHROME_INSTALLER_HELIUM_UPDATE_HELPER_HELIUM_UPDATE_HELPER_INTERNAL_H_
 --- /dev/null
 +++ b/chrome/installer/helium_update_helper/helium_update_helper_main.cc
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,61 @@
 +// Copyright 2026 The Helium Authors
 +// You can use, redistribute, and/or modify this source code under
 +// the terms of the GPL-3.0 license that can be found in the LICENSE file.
@@ -199,6 +200,7 @@
 +#include "base/strings/utf_string_conversions.h"
 +#include "base/time/time.h"
 +#include "base/win/scoped_com_initializer.h"
++#include "chrome/install_static/product_install_details.h"
 +#include "chrome/installer/helium_update_helper/helium_update_helper_internal.h"
 +
 +namespace {
@@ -210,6 +212,7 @@
 +  base::AtExitManager exit_manager;
 +  ::SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
 +  base::CommandLine::Init(0, nullptr);
++  install_static::InitializeProductDetailsForPrimaryModule();
 +
 +  base::win::ScopedCOMInitializer com_initializer;
 +  const base::CommandLine& command = *base::CommandLine::ForCurrentProcess();
@@ -536,7 +539,7 @@
 +}  // namespace helium_updater
 --- /dev/null
 +++ b/chrome/installer/helium_update_helper/update_installer.cc
-@@ -0,0 +1,111 @@
+@@ -0,0 +1,132 @@
 +// Copyright 2026 The Helium Authors
 +// You can use, redistribute, and/or modify this source code under
 +// the terms of the GPL-3.0 license that can be found in the LICENSE file.
@@ -555,8 +558,11 @@
 +#include "base/process/process.h"
 +#include "base/strings/strcat_win.h"
 +#include "base/strings/string_number_conversions_win.h"
++#include "base/version.h"
++#include "base/version_info/version_info.h"
 +#include "base/win/elevation_util.h"
 +#include "chrome/installer/helium_update_helper/helium_update_helper_internal.h"
++#include "chrome/installer/util/helper.h"
 +
 +namespace helium_updater {
 +
@@ -606,6 +612,24 @@
 +    LogEvent(EVENTLOG_ERROR_TYPE,
 +             L"Payload failed verification; refusing to install.");
 +    return kVerificationFailed;
++  }
++
++  const base::FilePath browser_exe = InstalledChromeExe();
++  base::FilePath helper_dir;
++  const bool has_browser_exe = !browser_exe.empty();
++  const bool has_helper_dir =
++      base::PathService::Get(base::DIR_EXE, &helper_dir);
++  const bool can_update =
++      has_browser_exe && has_helper_dir &&
++      installer::CanUpdateInstallation(
++          browser_exe, helper_dir,
++          base::Version(version_info::GetHeliumVersionNumber()),
++          /*system_install=*/true);
++
++  if (!can_update) {
++    LogEvent(EVENTLOG_ERROR_TYPE,
++             L"Installation no longer supports updates; refusing to install.");
++    return kInstallFailed;
 +  }
 +
 +  // Run the installer. The browser has exited, so this is a clean install
