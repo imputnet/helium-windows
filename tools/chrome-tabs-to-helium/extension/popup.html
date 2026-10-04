@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Chrome Tabs to Helium</title>
+<link rel="stylesheet" href="popup.css"></head><body><main>
+<span class="eyebrow">CHROME → HELIUM</span><h1>Bring your tabs over.</h1>
+<p id="count">Checking open tabs…</p>
+<p>Save a launcher, then double-click it to open these tabs in Helium.</p>
+<button id="save" disabled>Save Helium launcher</button>
+<p id="status" role="status" aria-live="polite"></p>
+<details id="skipped" hidden><summary id="skipped-count"></summary><ul id="skipped-list"></ul></details>
+<footer>All normal windows in this Chrome profile. Tab order and duplicates kept. Chrome tabs stay open. Incognito excluded.</footer>
+<p class="privacy">The launcher contains tab URLs. Keep it private and delete it after use. It opens links; websites may ask you to sign in again.</p>
+</main><script type="module" src="popup.js"></script></body></html>
