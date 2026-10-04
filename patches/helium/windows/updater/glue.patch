@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/chrome/browser/win/winsparkle_glue.cc
-@@ -0,0 +1,547 @@
+@@ -0,0 +1,652 @@
 +// Copyright 2026 The Helium Authors
 +// You can use, redistribute, and/or modify this source code under
 +// the terms of the GPL-3.0 license that can be found in the LICENSE file.
@@ -14,7 +14,9 @@
 +#include <algorithm>
 +#include <atomic>
 +#include <memory>
++#include <optional>
 +#include <string>
++#include <vector>
 +
 +#include "base/base_paths.h"
 +#include "base/callback_list.h"
@@ -22,6 +24,7 @@
 +#include "base/files/file_path.h"
 +#include "base/files/file_util.h"
 +#include "base/functional/bind.h"
++#include "base/functional/callback_helpers.h"
 +#include "base/location.h"
 +#include "base/logging.h"
 +#include "base/memory/raw_ptr.h"
@@ -35,6 +38,7 @@
 +#include "base/strings/utf_string_conversions.h"
 +#include "base/task/thread_pool.h"
 +#include "base/time/time.h"
++#include "base/version.h"
 +#include "base/version_info/version_info.h"
 +#include "chrome/browser/browser_process.h"
 +#include "chrome/browser/buildflags.h"
@@ -46,6 +50,7 @@
 +#include "chrome/common/chrome_paths.h"
 +#include "chrome/grit/generated_resources.h"
 +#include "chrome/install_static/install_util.h"
++#include "chrome/installer/util/helper.h"
 +#include "chrome/installer/util/util_constants.h"
 +#include "components/helium_services/helium_services_helpers.h"
 +#include "components/helium_services/pref_names.h"
@@ -63,6 +68,20 @@
 +namespace {
 +
 +std::atomic<bool> g_nearly_updated{false};
++
++void DisableUpdatesForUnsupportedInstallation();
++
++bool IsSupportedInstallation() {
++  base::FilePath exe;
++  base::FilePath module_dir;
++  return base::PathService::Get(base::FILE_EXE, &exe) &&
++         base::PathService::Get(base::DIR_MODULE, &module_dir) &&
++         installer::CanUpdateInstallation(
++             exe, module_dir,
++             base::Version(version_info::GetHeliumVersionNumber()),
++             install_static::IsSystemInstall());
++}
++
 +std::wstring& PendingSystemPayload() {
 +  static base::NoDestructor<std::wstring> path;
 +  return *path;
@@ -215,6 +234,13 @@
 +// Returning 1 tells WinSparkle we handled installation and it must not relaunch
 +// the app; the new version is applied on the next relaunch.
 +int __cdecl OnRunInstaller(const wchar_t* file_path) {
++  // Registration may have changed since startup or during the download.
++  if (!IsSupportedInstallation()) {
++    LOG(WARNING) << "WinSparkle: installation no longer supports updates";
++    content::GetUIThreadTaskRunner({})->PostTask(
++        FROM_HERE, base::BindOnce(&DisableUpdatesForUnsupportedInstallation));
++    return WINSPARKLE_RETURN_ERROR;
++  }
 +  if (install_static::IsSystemInstall()) {
 +    // System installs need elevation. We do not elevate now, instead record
 +    // the verified payload and apply it only when the user clicks Relaunch.
@@ -268,6 +294,7 @@
 +      return;
 +    }
 +    started_ = true;
++    EnsureEligibility(base::DoNothing());
 +    base::ThreadPool::PostTask(
 +        FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
 +        base::BindOnce(&ClearStaleSystemUpdateMarker));
@@ -275,6 +302,50 @@
 +      profile_manager_observation_.Observe(manager);
 +    }
 +    AcquireProfile(initial_profile, /*exclude=*/nullptr);
++  }
++
++  bool IsSupported() const { return supported_.value_or(false); }
++
++  bool PrepareForManualCheck(Profile* profile) {
++    if (!IsSupported() || !IsCandidate(profile) || !ProfileCanUpdate(profile)) {
++      return false;
++    }
++    // A previously disabled profile may have opted in since it was added.
++    // Use the requesting profile's consent and appcast before starting a check.
++    if (profile_ != profile) {
++      Unbind();
++      Bind(profile);
++    } else {
++      ApplyUpdaterState();
++    }
++    return initialized_;
++  }
++
++  void DisableForUnsupportedInstallation() {
++    supported_ = false;
++    if (initialized_) {
++      win_sparkle_set_automatic_check_for_updates(0);
++    }
++    WinSparkleStatusBroadcaster::GetInstance().Notify(
++        VersionUpdater::DISABLED, /*progress=*/0, std::u16string());
++  }
++
++  // About can open before the startup check finishes. Wait for that check
++  // rather than permanently caching "disabled" in the VersionUpdater instance.
++  void EnsureEligibility(base::OnceCallback<void(bool)> callback) {
++    if (supported_.has_value()) {
++      std::move(callback).Run(*supported_);
++      return;
++    }
++    eligibility_callbacks_.push_back(std::move(callback));
++    if (eligibility_callbacks_.size() != 1) {
++      return;
++    }
++    base::ThreadPool::PostTaskAndReplyWithResult(
++        FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
++        base::BindOnce(&IsSupportedInstallation),
++        base::BindOnce(&WinSparkleController::OnEligibilityDetermined,
++                       base::Unretained(this)));
 +  }
 +
 +  // ProfileManagerObserver:
@@ -305,6 +376,18 @@
 +  friend class base::NoDestructor<WinSparkleController>;
 +  WinSparkleController() = default;
 +  ~WinSparkleController() override = default;
++
++  void OnEligibilityDetermined(bool supported) {
++    supported_ = supported;
++    if (!supported) {
++      LOG(WARNING) << "WinSparkle: updates disabled for unsupported installation";
++    }
++    ApplyUpdaterState();
++    auto callbacks = std::move(eligibility_callbacks_);
++    for (auto& callback : callbacks) {
++      std::move(callback).Run(supported);
++    }
++  }
 +
 +  static ProfileManager* GetProfileManager() {
 +    return g_browser_process ? g_browser_process->profile_manager() : nullptr;
@@ -369,11 +452,13 @@
 +    registrar_.RemoveAll();
 +    profile_observation_.Reset();
 +    profile_ = nullptr;
-+    win_sparkle_set_automatic_check_for_updates(0);
++    if (initialized_) {
++      win_sparkle_set_automatic_check_for_updates(0);
++    }
 +  }
 +
 +  void ApplyUpdaterState() {
-+    if (!profile_) {
++    if (!profile_ || !IsSupported()) {
 +      return;
 +    }
 +    PrefService* prefs = profile_->GetPrefs();
@@ -417,15 +502,21 @@
 +  raw_ptr<Profile> profile_ = nullptr;
 +  bool initialized_ = false;
 +  bool started_ = false;
++  std::optional<bool> supported_;
++  std::vector<base::OnceCallback<void(bool)>> eligibility_callbacks_;
 +  PrefChangeRegistrar registrar_;
 +  base::ScopedObservation<Profile, ProfileObserver> profile_observation_{this};
 +  base::ScopedObservation<ProfileManager, ProfileManagerObserver>
 +      profile_manager_observation_{this};
 +};
 +
++void DisableUpdatesForUnsupportedInstallation() {
++  WinSparkleController::GetInstance().DisableForUnsupportedInstallation();
++}
++
 +class VersionUpdaterWinSparkle : public VersionUpdater {
 + public:
-+  explicit VersionUpdaterWinSparkle(bool enabled) : enabled_(enabled) {
++  explicit VersionUpdaterWinSparkle(Profile* profile) : profile_(profile) {
 +    subscription_ = WinSparkleStatusBroadcaster::GetInstance().Subscribe(
 +        base::BindRepeating(&VersionUpdaterWinSparkle::OnStatus,
 +                            weak_factory_.GetWeakPtr()));
@@ -441,7 +532,22 @@
 +                      PromoteCallback /*promote_callback*/) override {
 +    status_callback_ = std::move(status_callback);
 +
-+    if (!enabled_) {
++    if (!profile_ ||
++        !helium::ShouldAccessUpdateService(*profile_->GetPrefs())) {
++      RunStatus(DISABLED);
++      return;
++    }
++
++    RunStatus(CHECKING);
++    WinSparkleController::GetInstance().EnsureEligibility(base::BindOnce(
++        &VersionUpdaterWinSparkle::OnEligibilityDetermined,
++        weak_factory_.GetWeakPtr()));
++  }
++
++ private:
++  void OnEligibilityDetermined(bool supported) {
++    if (!supported ||
++        !WinSparkleController::GetInstance().PrepareForManualCheck(profile_)) {
 +      RunStatus(DISABLED);
 +      return;
 +    }
@@ -451,11 +557,9 @@
 +      return;
 +    }
 +
-+    RunStatus(CHECKING);
 +    win_sparkle_check_update_with_ui_and_install();
 +  }
 +
-+ private:
 +  void RunStatus(Status status,
 +                 int progress = 0,
 +                 const std::u16string& message = {}) {
@@ -470,10 +574,14 @@
 +  void OnStatus(VersionUpdater::Status status,
 +                int progress,
 +                const std::u16string& message) {
++    if (!WinSparkleEnabled(profile_ ? profile_->GetPrefs() : nullptr)) {
++      RunStatus(DISABLED);
++      return;
++    }
 +    RunStatus(status, progress, message);
 +  }
 +
-+  const bool enabled_;
++  const raw_ptr<Profile> profile_;
 +  StatusCallback status_callback_;
 +  base::CallbackListSubscription subscription_;
 +  base::WeakPtrFactory<VersionUpdaterWinSparkle> weak_factory_{this};
@@ -482,7 +590,8 @@
 +}  // namespace
 +
 +bool WinSparkleEnabled(PrefService* prefs) {
-+  return prefs && helium::ShouldAccessUpdateService(*prefs);
++  return WinSparkleController::GetInstance().IsSupported() && prefs &&
++         helium::ShouldAccessUpdateService(*prefs);
 +}
 +
 +void InitializeWinSparkle(Profile* profile) {
@@ -538,15 +647,11 @@
 +
 +std::unique_ptr<VersionUpdater> VersionUpdater::Create(
 +    content::WebContents* web_contents) {
-+  PrefService* prefs = nullptr;
-+  if (web_contents) {
-+    if (auto* profile =
-+            Profile::FromBrowserContext(web_contents->GetBrowserContext())) {
-+      prefs = profile->GetPrefs();
-+    }
-+  }
-+  return std::make_unique<helium::VersionUpdaterWinSparkle>(
-+      helium::WinSparkleEnabled(prefs));
++  Profile* profile = web_contents
++                         ? Profile::FromBrowserContext(
++                               web_contents->GetBrowserContext())
++                         : nullptr;
++  return std::make_unique<helium::VersionUpdaterWinSparkle>(profile);
 +}
 --- /dev/null
 +++ b/chrome/browser/win/winsparkle_glue.h
@@ -571,3 +676,133 @@
 +}  // namespace helium
 +
 +#endif  // CHROME_BROWSER_WIN_WINSPARKLE_GLUE_H_
+--- a/chrome/installer/util/helper.cc
++++ b/chrome/installer/util/helper.cc
+@@ -9,6 +9,7 @@
+ #include <string_view>
+ 
+ #include "base/check.h"
++#include "base/command_line.h"
+ #include "base/containers/fixed_flat_map.h"
+ #include "base/containers/span.h"
+ #include "base/files/file_util.h"
+@@ -94,16 +95,24 @@ base::FilePath GetInstallationDirFromPre
+ }
+ 
+ // Returns the default install path given an install level.
+-base::FilePath GetDefaultChromeInstallPathChecked(bool system_install) {
++base::FilePath GetDefaultChromeInstallPathUnchecked(bool system_install) {
+   base::FilePath install_path = GetPathWithEnvironmentFallback(
+       system_install ? base::DIR_PROGRAM_FILES : base::DIR_LOCAL_APP_DATA);
+-
+-  // Later steps assume a valid install path was found.
+-  CHECK(!install_path.empty());
++  if (install_path.empty()) {
++    return {};
++  }
+   return install_path.Append(install_static::GetChromeInstallSubDirectory())
+       .Append(installer::kInstallBinaryDir);
+ }
+ 
++base::FilePath GetDefaultChromeInstallPathChecked(bool system_install) {
++  base::FilePath install_path =
++      GetDefaultChromeInstallPathUnchecked(system_install);
++  // Later setup steps assume a valid install path was found.
++  CHECK(!install_path.empty());
++  return install_path;
++}
++
+ // Returns the path to the installation at `system_install` provided that the
+ // browser is installed and its `UninstallString` points into a valid install
+ // directory.
+@@ -163,6 +172,22 @@ base::span<const int> GetInstallationPat
+   return base::span(kx64PerMachineKeys);
+ }
+ 
++bool IsSameDirectory(const base::FilePath& a, const base::FilePath& b) {
++  if (base::FilePath::CompareEqualIgnoreCase(
++          a.StripTrailingSeparators().value(),
++          b.StripTrailingSeparators().value())) {
++    return true;
++  }
++
++  // Resolve aliases only when needed; normalization can fail for long paths.
++  base::FilePath resolved_a;
++  base::FilePath resolved_b;
++  return base::NormalizeFilePath(a, &resolved_a) &&
++         base::NormalizeFilePath(b, &resolved_b) &&
++         base::FilePath::CompareEqualIgnoreCase(resolved_a.value(),
++                                               resolved_b.value());
++}
++
+ }  // namespace
+ 
+ namespace installer {
+@@ -222,4 +247,49 @@ bool IsCurrentProcessInstalled() {
+   return install_dir.IsParent(this_exe);
+ }
+ 
++bool CanUpdateInstallation(const base::FilePath& browser_exe,
++                           const base::FilePath& module_dir,
++                           const base::Version& version,
++                           bool system_install) {
++  if (!browser_exe.IsAbsolute() || browser_exe.ReferencesParent() ||
++      !module_dir.IsAbsolute() || module_dir.ReferencesParent() ||
++      !version.IsValid() ||
++      !base::FilePath::CompareEqualIgnoreCase(browser_exe.BaseName().value(),
++                                            kChromeExe)) {
++    return false;
++  }
++
++  // Account for setup's GoogleUpdateIsMachine environment override.
++  base::CommandLine command(base::CommandLine::NO_PROGRAM);
++  if (system_install) {
++    command.AppendSwitch(switches::kSystemLevel);
++  }
++  const InitialPreferences prefs(command);
++  bool effective_system_install = false;
++  prefs.GetBool(initial_preferences::kSystemLevel, &effective_system_install);
++  if (effective_system_install != system_install) {
++    return false;
++  }
++
++  // Match setup's CheckPreInstallConditions.
++  if (!system_install) {
++    ProductState user_state;
++    ProductState system_state;
++    if (!user_state.Initialize(false) && system_state.Initialize(true)) {
++      return false;
++    }
++  }
++
++  base::FilePath target = GetInstalledDirectory(system_install);
++  if (target.empty()) {
++    target = GetDefaultChromeInstallPathUnchecked(system_install);
++  }
++  if (target.empty()) {
++    return false;
++  }
++
++  return IsSameDirectory(target, browser_exe.DirName()) &&
++         IsSameDirectory(target.AppendASCII(version.GetString()), module_dir);
++}
++
+ }  // namespace installer.
+--- a/chrome/installer/util/helper.h
++++ b/chrome/installer/util/helper.h
+@@ -52,6 +52,15 @@ base::FilePath FindInstallPath(bool syst
+ // process appears to reside in that Chrome's installation directory.
+ bool IsCurrentProcessInstalled();
+ 
++// Whether an update installer at `system_install` scope would target this
++// browser and its versioned module directory. Includes setup's registry/default
++// path fallback and environment override. Performs blocking filesystem work.
++// `version` is the running Helium version, not the registered product version.
++bool CanUpdateInstallation(const base::FilePath& browser_exe,
++                           const base::FilePath& module_dir,
++                           const base::Version& version,
++                           bool system_install);
++
+ }  // namespace installer
+ 
+ #endif  // CHROME_INSTALLER_UTIL_HELPER_H_
