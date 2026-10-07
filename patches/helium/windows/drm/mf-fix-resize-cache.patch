@@ -20,7 +20,7 @@ Cr-Commit-Position: refs/heads/main@{#1706868}
 
 --- a/media/renderers/win/media_foundation_renderer.cc
 +++ b/media/renderers/win/media_foundation_renderer.cc
-@@ -1267,8 +1267,6 @@ HRESULT MediaFoundationRenderer::UpdateV
+@@ -1288,8 +1288,6 @@ HRESULT MediaFoundationRenderer::UpdateV
      return S_OK;
    }
  
@@ -29,7 +29,7 @@ Cr-Commit-Position: refs/heads/main@{#1706868}
    ComPtr<IMFMediaEngineEx> mf_media_engine_ex;
    RETURN_IF_FAILED(mf_media_engine_.As(&mf_media_engine_ex));
  
-@@ -1283,6 +1281,10 @@ HRESULT MediaFoundationRenderer::UpdateV
+@@ -1304,6 +1302,10 @@ HRESULT MediaFoundationRenderer::UpdateV
    RETURN_IF_FAILED(mf_media_engine_ex->UpdateVideoStream(
        /*pSrc=*/nullptr, &dest_rect, /*pBorderClr=*/nullptr));
  
