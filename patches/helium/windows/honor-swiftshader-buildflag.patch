@@ -37,10 +37,10 @@
  vulkan-1.dll: %(VersionDir)s\
  v8_context_snapshot.bin: %(VersionDir)s\
  #
-@@ -120,3 +118,7 @@ snapshot_blob.bin: %(VersionDir)s\
- # do not want to include them in the installer.
+@@ -119,3 +117,7 @@ snapshot_blob.bin: %(VersionDir)s\
+ # this DLL may be present in the build dir if Dawn tests are built, in which case we
+ # do not want to include it in the installer.
  dxcompiler.dll: %(VersionDir)s\
- dxil.dll: %(VersionDir)s\
 +
 +[SWIFTSHADER]
 +vk_swiftshader.dll: %(VersionDir)s\
