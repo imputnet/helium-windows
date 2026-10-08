@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Chrome Tabs to Helium",
+  "version": "1.0.0",
+  "description": "Capture live tabs from this Chrome profile and save a Windows launcher that opens them in Helium.",
+  "minimum_chrome_version": "109",
+  "permissions": ["tabs", "downloads"],
+  "action": {"default_title": "Open Chrome tabs in Helium", "default_popup": "popup.html"},
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'; connect-src 'self'"}
+}
