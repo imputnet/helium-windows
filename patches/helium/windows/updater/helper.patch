@@ -10,7 +10,7 @@
      sources += [
 --- /dev/null
 +++ b/chrome/installer/helium_update_helper/BUILD.gn
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,59 @@
 +# Copyright 2026 The Helium Authors
 +# You can use, redistribute, and/or modify this source code under
 +# the terms of the GPL-3.0 license that can be found in the LICENSE file.
@@ -49,6 +49,7 @@
 +  deps = [
 +    ":helium_update_helper_manifest",
 +    "//base",
++    "//base/i18n:win_i18n",
 +    "//chrome/install_static:install_static_util",
 +    "//chrome/installer/util:with_rc_strings",
 +    "//third_party/boringssl",
@@ -252,16 +253,16 @@
 +
 +#include "base/containers/buffer_iterator.h"
 +#include "base/containers/span.h"
++#include "base/i18n/win/embedded_i18n/language_selector.h"
 +#include "base/no_destructor.h"
 +#include "base/win/current_module.h"
-+#include "base/win/embedded_i18n/language_selector.h"
 +#include "chrome/installer/helium_update_helper/helium_update_helper_internal.h"
 +#include "chrome/installer/util/installer_util_strings.h"
 +
 +namespace helium_updater {
 +
 +namespace {
-+constexpr base::win::i18n::LanguageSelector::LangToOffset kLanguageOffsets[] = {
++constexpr base::i18n::LanguageSelector::LangToOffset kLanguageOffsets[] = {
 +#define HANDLE_LANGUAGE(l_, o_) {L## #l_, o_},
 +    DO_LANGUAGES
 +#undef HANDLE_LANGUAGE
@@ -269,7 +270,7 @@
 +}  // namespace
 +
 +std::wstring LocalizedString(int base_message_id) {
-+  static base::NoDestructor<base::win::i18n::LanguageSelector> selector(
++  static base::NoDestructor<base::i18n::LanguageSelector> selector(
 +      std::wstring_view(), kLanguageOffsets);
 +  const UINT message_id = static_cast<UINT>(base_message_id) +
 +                          static_cast<UINT>(selector->offset());
