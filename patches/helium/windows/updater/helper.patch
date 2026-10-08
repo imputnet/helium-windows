@@ -1,6 +1,6 @@
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -1452,6 +1452,7 @@ source_set("core") {
+@@ -1443,6 +1443,7 @@ source_set("core") {
          "//components/helium_services",
          "//third_party/winsparkle",
        ]
@@ -710,7 +710,7 @@
      'filegroup': ['default'],
 --- a/infra/archive_config/win-archive-rel.json
 +++ b/infra/archive_config/win-archive-rel.json
-@@ -17,6 +17,7 @@
+@@ -16,6 +16,7 @@
                  "elevation_service.exe",
                  "eventlog_provider.dll",
                  "First Run",

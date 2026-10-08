@@ -22,7 +22,7 @@
    }
  
    # Android and ChromeOS don't support multiple browser processes, so they don't
-@@ -1435,6 +1443,17 @@ source_set("core") {
+@@ -1426,6 +1434,17 @@ source_set("core") {
    }
  
    if (is_win) {
@@ -124,7 +124,7 @@
 +}
 --- a/infra/archive_config/win-archive-rel.json
 +++ b/infra/archive_config/win-archive-rel.json
-@@ -33,7 +33,8 @@
+@@ -32,7 +32,8 @@
                  "v8_context_snapshot.bin",
                  "vk_swiftshader.dll",
                  "vk_swiftshader_icd.json",
