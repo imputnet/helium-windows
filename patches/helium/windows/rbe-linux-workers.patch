@@ -258,7 +258,7 @@
 +}
 --- a/third_party/dawn/third_party/directx-shader-compiler/BUILD.gn
 +++ b/third_party/dawn/third_party/directx-shader-compiler/BUILD.gn
-@@ -1307,7 +1307,7 @@ template("dxcompiler_sourceset") {
+@@ -1343,7 +1343,7 @@ template("dxcompiler_sourceset") {
        deps += [ ":dxcetw-h" ]
        include_dirs += [
          "$target_gen_dir/include/dxc/Tracing/dxcetw",  # dxcetw-h
@@ -267,7 +267,7 @@
        ]
      }
  
-@@ -2461,7 +2461,7 @@ executable("dxc") {
+@@ -2534,7 +2534,7 @@ executable("dxc") {
  
    if (is_win) {
      include_dirs = [

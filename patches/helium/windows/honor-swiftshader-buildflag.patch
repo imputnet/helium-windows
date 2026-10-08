@@ -1,6 +1,6 @@
 --- a/ui/gl/BUILD.gn
 +++ b/ui/gl/BUILD.gn
-@@ -342,10 +342,6 @@ component("gl") {
+@@ -343,10 +343,6 @@ component("gl") {
        "//ui/gfx/mojom:dxgi_info",
      ]
  

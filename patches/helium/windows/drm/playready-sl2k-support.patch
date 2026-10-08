@@ -247,7 +247,7 @@
      std::move(cdm_capability_cb)
 --- a/content/browser/media/media_interface_proxy.cc
 +++ b/content/browser/media/media_interface_proxy.cc
-@@ -33,6 +33,7 @@
+@@ -34,6 +34,7 @@
  #include "content/public/common/cdm_info.h"
  #include "content/public/common/content_client.h"
  #include "media/base/cdm_context.h"
@@ -255,7 +255,7 @@
  #include "media/cdm/cdm_type.h"
  #include "media/media_buildflags.h"
  #include "media/mojo/buildflags.h"
-@@ -554,7 +555,9 @@ void MediaInterfaceProxy::CreateCdm(cons
+@@ -557,7 +558,9 @@ void MediaInterfaceProxy::CreateCdm(cons
      }
  
      auto cdm_info = CdmRegistryImpl::GetInstance()->GetCdmInfo(
@@ -264,9 +264,9 @@
 +                                   ? CdmInfo::Robustness::kHardwareSecure
 +                                   : CdmInfo::Robustness::kSoftwareSecure);
      if (cdm_info) {
-       DVLOG(2) << "Get MediaFoundationService with CDM path " << cdm_info->path;
-       auto* factory = GetMediaFoundationServiceInterfaceFactory(cdm_info->path);
-@@ -651,10 +654,9 @@ bool MediaInterfaceProxy::ShouldUseMedia
+       // The MediaFoundation CDM path has no off-the-record dimension:
+       // CdmDocumentServiceImpl::GetMediaFoundationCdmData reads the REGULAR
+@@ -737,10 +740,9 @@ bool MediaInterfaceProxy::ShouldUseMedia
      const media::CdmConfig& cdm_config) {
    DVLOG(1) << __func__ << ": this=" << this << ", cdm_config=" << cdm_config;
  

@@ -11,7 +11,7 @@
  namespace {
  
  typedef HRESULT (STDAPICALLTYPE* RegisterApplicationRestartProc)(
-@@ -641,6 +645,10 @@ void ChromeBrowserMainPartsWin::PostProf
+@@ -700,6 +704,10 @@ void ChromeBrowserMainPartsWin::PostProf
    if (!is_initial_profile)
      return;
  
@@ -24,7 +24,7 @@
    if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kAppId) &&
 --- a/chrome/browser/lifetime/application_lifetime_desktop.cc
 +++ b/chrome/browser/lifetime/application_lifetime_desktop.cc
-@@ -21,6 +21,7 @@
+@@ -22,6 +22,7 @@
  #include "chrome/browser/background/glic/glic_background_mode_manager.h"
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/browser_process_platform_part.h"
@@ -32,7 +32,7 @@
  #include "chrome/browser/download/download_core_service.h"
  #include "chrome/browser/global_features.h"
  #include "chrome/browser/lifetime/application_lifetime.h"
-@@ -69,6 +70,10 @@
+@@ -70,6 +71,10 @@
  #include "chrome/browser/shutdown_watchdog_mac.h"
  #endif  // BUILDFLAG(IS_MAC)
  
@@ -43,7 +43,7 @@
  #if BUILDFLAG(ENABLE_SESSION_SERVICE)
  #include "chrome/browser/sessions/session_data_service.h"
  #include "chrome/browser/sessions/session_data_service_factory.h"
-@@ -286,7 +291,21 @@ void AttemptRestartInternal(IgnoreUnload
+@@ -287,7 +292,21 @@ void AttemptRestartInternal(IgnoreUnload
        FROM_HERE, base::BindOnce(&ExitIgnoreUnloadHandlers));
  #else   // !BUILDFLAG(IS_CHROMEOS).
    // Set the flag to restore state after the restart.
