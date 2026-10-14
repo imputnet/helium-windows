@@ -45,14 +45,14 @@ methods for older Windows versions.
 1. Setup the following:
     * 7-Zip
     * Windows Developer Mode enabled (for creating symbolic links).
-    * Python 3.8 or above
+    * Python 3.11 or above
 		* Can be installed using WinGet or the Microsoft Store.
 		* If you don't plan on using the Microsoft Store version of Python:
 			* Check "Add python.exe to PATH" before install.
 			* At the end of the Python installer, click the button to lift the `MAX_PATH` length restriction.
 			* Disable the `python3.exe` and `python.exe` aliases in `Settings > Apps > Advanced app settings > App execution aliases`. They will typically be referred to as "App Installer". See [this question on stackoverflow.com](https://stackoverflow.com/questions/57485491/python-python3-executes-in-command-prompt-but-does-not-run-correctly) to understand why.
 			* Ensure that your Python directory either has a copy of Python named "python3.exe" or a symlink linking to the Python executable.
-		* `httplib2` at version 0.22.0, `Pillow`, and `clang-format`. Install with `python -m pip install httplib2==0.22.0 Pillow clang-format`; ensure Python's Scripts directory is on `PATH`.
+		* `requests` and `Pillow`. Install with `python -m pip install requests Pillow`; ensure Python's Scripts directory is on `PATH`.
     * Make sure to lift the `MAX_PATH` length restriction, either by clicking the button at the end of the Python installer or by [following these instructions](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry#:~:text=Enable,Later).
     * Git (to fetch all required ungoogled-chromium scripts)
         * During setup, make sure "Git from the command line and also from 3rd-party software" is selected. This is usually the recommended option.
@@ -104,7 +104,6 @@ ln -s /usr/bin/vim /usr/bin/vi
 1. Clone sources
 	**`Developer Command Prompt for VS`**
 	* `python3 helium-chromium\utils\clone.py -o build\src`
-1. Check for rust version change (see below)
 1. Update pruning list
 	**`Developer Command Prompt for VS`**
 	* `python3 helium-chromium\devutils\update_lists.py -t build\src --domain-regex helium-chromium\domain_regex.list`
@@ -123,45 +122,3 @@ ln -s /usr/bin/vim /usr/bin/vi
 	1. Sanity checking for consistency in series file
 		* `./devutils/check_patch_files.sh`
 1. Use Git to add changes and commit
-
-### Update dependencies
-
-**NOTE:** For all steps, update `downloads.ini` accordingly.
-
-1. Check the [LLVM GitHub](https://github.com/llvm/llvm-project/releases/) for the latest version of LLVM.
-	1. Download `LLVM-*-win64.exe` file.
-	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
-1. Check the esbuild version in file `build/src/third_party/devtools-frontend/src/DEPS` and find the closest release in the [esbuild GitHub](https://github.com/evanw/esbuild/releases) to it.
-	* Example: `version:3@0.24.0.chromium.2` should be `0.24.0`
-1. Check the [Git GitHub](https://github.com/git-for-windows/git/releases/) for the latest version of Git.
-	1. Get the SHA-256 checksum for `PortableGit-<version>-64-bit.7z.exe`.
-1. Check for commit hash changes of `src` submodule in `third_party/microsoft_dxheaders` (e.g. using GitHub `https://github.com/chromium/chromium/tree/<version>/third_party/microsoft_dxheaders`).
-	1. Replace `version` with the Chromium version in `helium-chromium/chromium_version.txt`.
-1. Check the node version changes in `third_party/node/update_node_binaries` (e.g. using GitHub `https://github.com/chromium/chromium/tree/<version>/third_party/node/update_node_binaries`).
-	1. Download the "Standalone Binary" version from the [NodeJS website](https://nodejs.org/en/download).
-	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
-1. Check for version changes of windows rust crate (`third_party/rust/windows_x86_64_msvc/`).
-	1. Download rust crate zip file.
-	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
-	1. Update `patches/ungoogled-chromium/windows/windows-fix-building-with-rust.patch` accordingly.
-
-### Update rust
-1. Check `RUST_REVISION` constant in file `tools/rust/update_rust.py` in build root.
-	* Example: Revision could be `f7b43542838f0a4a6cfdb17fbeadf45002042a77`
-1. Get date for nightly rust build from the Rust GitHub page: `https://github.com/rust-lang/rust/commit/f7b43542838f0a4a6cfdb17fbeadf45002042a77`
-	1. Replace `RUST_REVISION` with the obtained value
-	1. Adapt `downloads.ini` accordingly
-	* Example: The above revision corresponds to the nightly build date `2025-03-14` (`YYYY-mm-dd`)
-1. Download nightly rust build from: `https://static.rust-lang.org/dist/<build-date>/rust-nightly-x86_64-pc-windows-msvc.tar.gz`
-	1. Replace `build-date` with the obtained value
-	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
-	1. Extract archive
-	1. Execute `rustc\bin\rustc.exe -V` to get rust version string
-	1. Adapt `patches\ungoogled-chromium\windows\windows-fix-building-with-rust.patch` accordingly
-1. Download nightly rust build from: `https://static.rust-lang.org/dist/<build-date>/rust-nightly-i686-pc-windows-msvc.tar.gz`
-	1. Replace `build-date` with the obtained value
-	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
-1. Download nightly rust build from: `https://static.rust-lang.org/dist/<build-date>/rust-nightly-aarch64-pc-windows-msvc.tar.gz`
-	1. Replace `build-date` with the obtained value
-	1. Get the SHA-512 checksum using `sha512sum` in **`MSYS2 MSYS`**.
-
