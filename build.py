@@ -20,7 +20,6 @@ import shutil
 import subprocess
 import ctypes
 from pathlib import Path
-from contextlib import chdir
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'helium-chromium' / 'utils'))
 import downloads
@@ -158,15 +157,23 @@ def main():
         '--arm',
         action='store_true'
     )
-    parser.add_argument(
-        '--tarball',
-        action='store_true'
-    )
+    sources = parser.add_mutually_exclusive_group()
+    sources.add_argument(
+        '--tarball', dest='tarball', action='store_true',
+        help='Download prepared Chromium archives (default for x64)')
+    sources.add_argument(
+        '--clone', dest='tarball', action='store_false',
+        help='Clone Chromium and prepare dependencies with gclient (default for ARM64)')
+    parser.set_defaults(tarball=None)
     parser.add_argument(
         '--dev',
         action='store_true'
     )
     args = parser.parse_args()
+    if args.tarball is None:
+        args.tarball = not args.arm
+    if args.tarball and args.arm:
+        parser.error('the prepared Windows archive targets x64; use --clone for ARM64')
 
     # Set common variables
     source_tree = _ROOT_DIR / 'build' / 'src'
@@ -186,91 +193,40 @@ def main():
             ExtractorEnum.WINRAR: args.winrar_path,
         }
 
-        # Prepare source folder
+        download_configs = [
+            _ROOT_DIR / 'downloads.ini',
+            _ROOT_DIR / 'helium-chromium' / 'deps.ini',
+        ]
         if args.tarball:
-            # Download chromium tarball
-            get_logger().info('Downloading chromium tarball...')
-            download_info = downloads.DownloadInfo([_ROOT_DIR / 'helium-chromium' / 'downloads.ini'])
-            downloads.retrieve_downloads(download_info, downloads_cache, None, True)
-            try:
-                downloads.check_downloads(download_info, downloads_cache, None)
-            except downloads.HashMismatchError as exc:
-                get_logger().error('File checksum does not match: %s', exc)
-                exit(1)
-
-            # Unpack chromium tarball
-            get_logger().info('Unpacking chromium tarball...')
-            downloads.unpack_downloads(download_info, downloads_cache, None, source_tree, extractors)
+            download_configs = [
+                _ROOT_DIR / 'helium-chromium' / 'downloads.ini',
+                _ROOT_DIR / 'downloads.x64.ini',
+            ] + download_configs
         else:
-            # Clone sources
-            subprocess.run([sys.executable, str(Path('helium-chromium', 'utils', 'clone.py')), '-o', 'build\\src', '-p', 'win-arm64' if args.arm else 'win64'], check=True)
+            subprocess.run([
+                sys.executable, str(_ROOT_DIR / 'helium-chromium' / 'utils' / 'clone.py'),
+                '-o', str(source_tree), '-p', 'win-arm64' if args.arm else 'win64',
+            ], check=True)
 
-        # Retrieve windows downloads
         get_logger().info('Downloading required files...')
-        download_info_win = downloads.DownloadInfo([_ROOT_DIR / 'downloads.ini'])
-        components = list(download_info_win)
-        if not os.environ.get('SISO_REAPI_ADDRESS'):
-            components.remove('nodejs-linux')
-        downloads.retrieve_downloads(download_info_win, downloads_cache, components, True)
+        download_info = downloads.DownloadInfo(download_configs)
+        downloads.retrieve_downloads(download_info, downloads_cache, None, True)
         try:
-            downloads.check_downloads(download_info_win, downloads_cache, components)
+            downloads.check_downloads(download_info, downloads_cache, None)
         except downloads.HashMismatchError as exc:
             get_logger().error('File checksum does not match: %s', exc)
-            exit(1)
+            parser.exit(1)
+        get_logger().info('Unpacking downloads...')
+        downloads.unpack_downloads(download_info, downloads_cache, None, source_tree, extractors)
 
-        # Retrieve deps
-        get_logger().info('Downloading deps...')
-        deps_info = downloads.DownloadInfo([_ROOT_DIR / 'helium-chromium' / 'deps.ini'])
-        downloads.retrieve_downloads(deps_info, downloads_cache, None, True)
-        try:
-            downloads.check_downloads(deps_info, downloads_cache, None)
-        except downloads.HashMismatchError as exc:
-            get_logger().error('File checksum does not match: %s', exc)
-            exit(1)
-        get_logger().info('Unpacking deps...')
-        downloads.unpack_downloads(deps_info, downloads_cache, None, source_tree, extractors)
-
-
-        # Prune binaries
+        prune_binaries.prune_dirs(source_tree, False, None, keep_build_dependencies=True)
         pruning_list = _ROOT_DIR / 'helium-chromium' / 'pruning.list'
+        prune_list = tuple(filter(len, pruning_list.read_text(encoding=ENCODING).splitlines()))
         unremovable_files = prune_binaries.prune_files(
-            source_tree,
-            pruning_list.read_text(encoding=ENCODING).splitlines()
-        )
+            source_tree, prune_list, keep_build_dependencies=True)
         if unremovable_files:
             get_logger().error('Files could not be pruned: %s', unremovable_files)
             parser.exit(1)
-
-        # Unpack downloads
-        DIRECTX = source_tree / 'third_party' / 'microsoft_dxheaders' / 'src'
-        ESBUILD = source_tree / 'third_party' / 'devtools-frontend' / 'src' / 'third_party' / 'esbuild'
-        if DIRECTX.exists():
-            shutil.rmtree(DIRECTX)
-            DIRECTX.mkdir()
-        if ESBUILD.exists():
-            shutil.rmtree(ESBUILD)
-            ESBUILD.mkdir()
-        get_logger().info('Unpacking downloads...')
-        downloads.unpack_downloads(download_info_win, downloads_cache, components, source_tree, extractors)
-
-        cipd_cache = downloads_cache / 'cipd'
-        cipd_cache.mkdir(exist_ok=True)
-        cipd_env = os.environ.copy()
-        cipd_env['CIPD_CACHE_DIR'] = str(cipd_cache)
-        cipd_command = [
-            sys.executable,
-            str(_ROOT_DIR / 'helium-chromium' / 'utils' / 'install_cipd_deps.py'),
-            source_tree,
-        ]
-        if os.environ.get('SISO_REAPI_ADDRESS'):
-            cipd_command.append('--remote-exec')
-        subprocess.run(cipd_command, check=True, env=cipd_env)
-
-        # clone.py skips the gclient hook that creates the Siso backend config.
-        siso_backend_dir = source_tree / 'build/config/siso/backend_config'
-        if not (siso_backend_dir / 'backend.star').exists():
-            shutil.copyfile(siso_backend_dir / 'google.star',
-                            siso_backend_dir / 'backend.star')
 
         if not args.dev:
             # Apply patches
@@ -291,16 +247,14 @@ def main():
             print("Apply patches using quilt, then press Enter")
             input()
 
-        # Download toolchains after the Windows extraction patch, before domain
-        # substitution rewrites the download URL shared by Rust and Clang.
-        with chdir(source_tree):
-            _run_build_process(sys.executable, 'tools\\rust\\update_rust.py')
-            _run_build_process(sys.executable, 'tools\\clang\\scripts\\update.py')
-            if os.environ.get('SISO_REAPI_ADDRESS'):
-                _run_build_process(
-                    sys.executable, 'tools\\clang\\scripts\\update.py',
-                    '--host-os=linux',
-                    '--output-dir=third_party/llvm-build/Release+Asserts_linux')
+        # Remote Windows compiles use a separate Linux compiler on workers.
+        # Apply its extraction patch before downloading, and substitute domains after.
+        if os.environ.get('SISO_REAPI_ADDRESS'):
+            subprocess.run([
+                sys.executable, str(source_tree / 'tools/clang/scripts/update.py'),
+                '--host-os=linux',
+                '--output-dir=' + str(source_tree / 'third_party/llvm-build/Release+Asserts_linux'),
+            ], check=True)
 
         if not args.dev:
             # Substitute domains
@@ -358,14 +312,6 @@ def main():
 
         _configure_remoteexec(source_tree)
 
-    clang_format = shutil.which('clang-format')
-    if not clang_format:
-        parser.error('clang-format not found on PATH; run python -m pip install clang-format')
-    formatter = source_tree / 'buildtools/win-format/clang-format.exe'
-    formatter.parent.mkdir(parents=True, exist_ok=True)
-    formatter.unlink(missing_ok=True)
-    formatter.symlink_to(clang_format)
-
     if not args.ci or not (source_tree / 'out/Default').exists():
         # Output args.gn
         (source_tree / 'out/Default').mkdir(parents=True, exist_ok=True)
@@ -374,7 +320,7 @@ def main():
         windows_flags = (_ROOT_DIR / 'flags.windows.gn').read_text(encoding=ENCODING)
         if args.arm:
             windows_flags = windows_flags.replace('x64', 'arm64')
-        if args.tarball or args.dev:
+        if args.dev:
             windows_flags += '\nchrome_pgo_phase=0\n'
 
         if os.environ.get('SISO_REAPI_ADDRESS'):
@@ -408,7 +354,7 @@ def main():
             'buildtools\\win\\gn.exe', 'gen', 'out\\Default', '--fail-on-unused-args')
 
     # Ninja commandline
-    os.environ['SISO_PATH'] = str(source_tree / 'third_party/siso/cipd/siso.exe')
+    os.environ.setdefault('SISO_PATH', str(source_tree / 'third_party/siso/cipd/siso.exe'))
     ninja_commandline = [sys.executable, 'third_party\\depot_tools\\autoninja.py']
     if args.thread_count is not None:
         ninja_commandline.append('-j')
