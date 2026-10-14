@@ -222,11 +222,11 @@ def main():
         prune_binaries.prune_dirs(source_tree, False, None, keep_build_dependencies=True)
         pruning_list = _ROOT_DIR / 'helium-chromium' / 'pruning.list'
         prune_list = tuple(filter(len, pruning_list.read_text(encoding=ENCODING).splitlines()))
-        unremovable_files = prune_binaries.prune_files(
+        missing_files = prune_binaries.prune_files(
             source_tree, prune_list, keep_build_dependencies=True)
-        if unremovable_files:
-            get_logger().error('Files could not be pruned: %s', unremovable_files)
-            parser.exit(1)
+        if missing_files:
+            get_logger().info('Skipped %d pruning entries absent from this source tree',
+                              len(missing_files))
 
         if not args.dev:
             # Apply patches
