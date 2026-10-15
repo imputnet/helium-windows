@@ -99,6 +99,10 @@
  
      /**
          Notifies the UI that a new version is available.
+--- a/third_party/winsparkle/src/winsparkle.rc
++++ b/third_party/winsparkle/src/winsparkle.rc
+@@ -30 +29,0 @@
+-UpdateAvailable ICON "../artwork/WinSparkle.ico"
 --- /dev/null
 +++ b/third_party/winsparkle/src/ui_headless.cpp
 @@ -0,0 +1,148 @@
