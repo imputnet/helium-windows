@@ -17,15 +17,15 @@
        "//build:branding_buildflags",
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
-@@ -5266,7 +5266,6 @@ std::wstring ChromeContentBrowserClient:
+@@ -5360,7 +5360,6 @@ std::wstring ChromeContentBrowserClient:
  #endif
      case sandbox::mojom::Sandbox::kPrintCompositor:
      case sandbox::mojom::Sandbox::kAudio:
 -    case sandbox::mojom::Sandbox::kScreenAI:
+     case sandbox::mojom::Sandbox::kPlatformRuntime:
      case sandbox::mojom::Sandbox::kSpeechRecognition:
      case sandbox::mojom::Sandbox::kPdfConversion:
-     case sandbox::mojom::Sandbox::kService:
-@@ -5374,7 +5373,6 @@ bool ChromeContentBrowserClient::PreSpaw
+@@ -5469,7 +5468,6 @@ bool ChromeContentBrowserClient::PreSpaw
      case sandbox::mojom::Sandbox::kPrintBackend:
  #endif
      case sandbox::mojom::Sandbox::kPrintCompositor:
@@ -76,7 +76,7 @@
    safe_browsing_use_unrar = true
 --- a/components/safe_browsing/core/browser/ping_manager.cc
 +++ b/components/safe_browsing/core/browser/ping_manager.cc
-@@ -610,8 +610,6 @@ PingManager::ReportThreatDetailsResult P
+@@ -608,8 +608,6 @@ PingManager::ReportThreatDetailsResult P
    SanitizeThreatDetailsReport(report);
    if (!get_user_population_callback_.is_null()) {
      *report->mutable_population() = get_user_population_callback_.Run();
