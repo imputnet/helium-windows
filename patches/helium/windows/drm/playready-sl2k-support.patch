@@ -395,7 +395,7 @@
  
    // Use a random CDM origin.
    auto cdm_origin_id = base::UnguessableToken::Create();
-@@ -322,12 +323,11 @@ CdmCapabilityOrStatus GetCdmCapability(
+@@ -321,12 +322,11 @@ CdmCapabilityOrStatus GetCdmCapability(
  
    const auto start_time = base::TimeTicks::Now();
  
