@@ -12,7 +12,7 @@
    if (GetLastBreakingInstallerVersion(reg_root) <= new_version)
 --- a/chrome/installer/setup/install.cc
 +++ b/chrome/installer/setup/install.cc
-@@ -239,7 +239,8 @@ InstallStatus InstallNewVersion(const In
+@@ -241,7 +241,8 @@ InstallStatus InstallNewVersion(const In
    }
  
    bool new_chrome_exe_exists = base::PathExists(new_chrome_exe);
@@ -24,7 +24,7 @@
                << current_version;
 --- a/chrome/installer/setup/setup_main.cc
 +++ b/chrome/installer/setup/setup_main.cc
-@@ -1358,7 +1358,17 @@ InstallStatus InstallProductsHelper(Inst
+@@ -1356,7 +1356,17 @@ InstallStatus InstallProductsHelper(Inst
      if (!IsDowngradeAllowed(prefs)) {
        const ProductState* product_state =
            original_state.GetProductState(system_install);
@@ -44,7 +44,7 @@
          int message_id = IDS_INSTALL_HIGHER_VERSION_BASE;
 --- a/chrome/installer/setup/setup_util.cc
 +++ b/chrome/installer/setup/setup_util.cc
-@@ -658,6 +658,15 @@ base::FilePath GetTracingServicePath(con
+@@ -663,6 +663,15 @@ base::FilePath GetTracingServicePath(con
        .Append(kElevatedTracingServiceExe);
  }
  
@@ -60,7 +60,7 @@
  void AddUpdateDowngradeVersionItem(HKEY root,
                                     const base::Version& current_version,
                                     const base::Version& new_version,
-@@ -666,7 +675,8 @@ void AddUpdateDowngradeVersionItem(HKEY
+@@ -671,7 +680,8 @@ void AddUpdateDowngradeVersionItem(HKEY
    DCHECK(new_version.IsValid());
    const auto downgrade_version = InstallUtil::GetDowngradeVersion();
    const std::wstring client_state_key = install_static::GetClientStateKeyPath();
@@ -70,7 +70,7 @@
      // This is a downgrade. Write the value if this is the first one (i.e., no
      // previous value exists). Otherwise, leave any existing value in place.
      if (!downgrade_version) {
-@@ -674,8 +684,10 @@ void AddUpdateDowngradeVersionItem(HKEY
+@@ -679,8 +689,10 @@ void AddUpdateDowngradeVersionItem(HKEY
            root, client_state_key, KEY_WOW64_32KEY, kRegDowngradeVersion,
            base::ASCIIToWide(current_version.GetString()), true);
      }

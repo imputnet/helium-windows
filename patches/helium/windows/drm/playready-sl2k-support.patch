@@ -226,7 +226,7 @@
  
 --- a/content/browser/media/cdm_registry_impl.cc
 +++ b/content/browser/media/cdm_registry_impl.cc
-@@ -565,13 +565,14 @@ void CdmRegistryImpl::LazyInitializeCapa
+@@ -568,13 +568,14 @@ void CdmRegistryImpl::LazyInitializeCapa
    }
  
  #if BUILDFLAG(IS_WIN)
@@ -236,7 +236,7 @@
 +  if (robustness == CdmInfo::Robustness::kHardwareSecure ||
 +      media::IsPlayReady(key_system)) {
 +    auto cdm_info = GetCdmInfo(key_system, robustness);
-     DCHECK(cdm_info && !cdm_info->capability);
+     CHECK(cdm_info && !cdm_info->capability, base::NotFatalUntil::M160);
      GetMediaFoundationServiceCdmCapability(
          key_system, cdm_info->type, cdm_info->path,
 -        /*is_hw_secure=*/true, std::move(cdm_capability_cb));
@@ -255,7 +255,7 @@
  #include "media/cdm/cdm_type.h"
  #include "media/media_buildflags.h"
  #include "media/mojo/buildflags.h"
-@@ -557,7 +558,9 @@ void MediaInterfaceProxy::CreateCdm(cons
+@@ -565,7 +566,9 @@ void MediaInterfaceProxy::CreateCdm(cons
      }
  
      auto cdm_info = CdmRegistryImpl::GetInstance()->GetCdmInfo(
@@ -266,7 +266,7 @@
      if (cdm_info) {
        // The MediaFoundation CDM path has no off-the-record dimension:
        // CdmDocumentServiceImpl::GetMediaFoundationCdmData reads the REGULAR
-@@ -737,10 +740,9 @@ bool MediaInterfaceProxy::ShouldUseMedia
+@@ -749,10 +752,9 @@ bool MediaInterfaceProxy::ShouldUseMedia
      const media::CdmConfig& cdm_config) {
    DVLOG(1) << __func__ << ": this=" << this << ", cdm_config=" << cdm_config;
  
@@ -292,8 +292,8 @@
 +}
 +
  bool IsSubKeySystemOf(std::string_view key_system, std::string_view base) {
-   return base::StartsWith(key_system, base) &&
-          base::StartsWith(key_system.substr(base.size()), ".");
+   return key_system.starts_with(base) &&
+          key_system.substr(base.size()).starts_with(".");
 --- a/media/base/key_system_names.h
 +++ b/media/base/key_system_names.h
 @@ -24,6 +24,9 @@ MEDIA_EXPORT bool IsSubKeySystemOf(std::
@@ -395,7 +395,7 @@
  
    // Use a random CDM origin.
    auto cdm_origin_id = base::UnguessableToken::Create();
-@@ -322,12 +323,11 @@ CdmCapabilityOrStatus GetCdmCapability(
+@@ -321,12 +322,11 @@ CdmCapabilityOrStatus GetCdmCapability(
  
    const auto start_time = base::TimeTicks::Now();
  
@@ -412,7 +412,7 @@
      DVLOG(1) << __func__
               << ": CreateDummyMediaFoundationCdm() failed with hresult="
               << hresult;
-@@ -616,14 +616,15 @@ void MediaFoundationService::IsKeySystem
+@@ -615,14 +615,15 @@ void MediaFoundationService::IsKeySystem
      return;
    }
  

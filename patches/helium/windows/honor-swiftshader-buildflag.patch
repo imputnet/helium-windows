@@ -37,7 +37,7 @@
  vulkan-1.dll: %(VersionDir)s\
  v8_context_snapshot.bin: %(VersionDir)s\
  #
-@@ -119,3 +117,7 @@ snapshot_blob.bin: %(VersionDir)s\
+@@ -113,3 +111,7 @@ snapshot_blob.bin: %(VersionDir)s\
  # this DLL may be present in the build dir if Dawn tests are built, in which case we
  # do not want to include it in the installer.
  dxcompiler.dll: %(VersionDir)s\
@@ -88,7 +88,7 @@
          help='Whether ANGLE is statically linked.',
 --- a/third_party/angle/gni/angle.gni
 +++ b/third_party/angle/gni/angle.gni
-@@ -406,6 +406,10 @@ declare_args() {
+@@ -408,6 +408,10 @@ declare_args() {
    angle_trace_events_ignore_timestamp = is_android && angle_standalone
  }
  
@@ -101,7 +101,7 @@
  
 --- a/third_party/dawn/scripts/dawn_features.gni
 +++ b/third_party/dawn/scripts/dawn_features.gni
-@@ -69,6 +69,10 @@ if (is_android || is_ios) {
+@@ -97,6 +97,10 @@ if (is_android || is_ios) {
    }
  }
  
