@@ -1,0 +1,102 @@
+--- a/chrome/installer/setup/install.cc
++++ b/chrome/installer/setup/install.cc
+@@ -385,6 +385,7 @@ void RegisterChromeOnMachine(const InstallerState& installer_state,
+   const base::FilePath chrome_exe(
+       installer_state.target_path().Append(kChromeExe));
+   VLOG(1) << "Registering Chrome as browser: " << chrome_exe.value();
++  DeleteChromeAppPathsKeyIfOwned(installer_state.root_key(), chrome_exe);
+   ShellUtil::RegisterChromeBrowserBestEffort(chrome_exe);
+ }
+ 
+--- a/chrome/installer/setup/setup_util.cc
++++ b/chrome/installer/setup/setup_util.cc
+@@ -30,6 +30,7 @@
+ #include "base/logging.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/numerics/safe_conversions.h"
++#include "base/strings/strcat.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/version.h"
+@@ -52,6 +53,7 @@
+ #include "chrome/installer/util/install_util.h"
+ #include "chrome/installer/util/installation_state.h"
+ #include "chrome/installer/util/registry_util.h"
++#include "chrome/installer/util/shell_util.h"
+ #include "chrome/installer/util/util_constants.h"
+ #include "chrome/installer/util/work_item.h"
+ #include "chrome/installer/util/work_item_list.h"
+@@ -672,6 +674,23 @@ bool IsHeliumVersionSchemeMigration(const base::Version& current_version,
+          new_version.components().front() < 10;
+ }
+ 
++void DeleteChromeAppPathsKeyIfOwned(HKEY root,
++                                    const base::FilePath& chrome_exe) {
++  const std::wstring app_path_key =
++      base::StrCat({ShellUtil::kAppPathsRegistryKey, L"\\", kChromeExe});
++  base::win::RegKey key(root, app_path_key.c_str(), KEY_QUERY_VALUE);
++  std::wstring app_path;
++  if (key.ReadValue(nullptr, &app_path) != ERROR_SUCCESS) {
++    return;
++  }
++  key.Close();
++
++  // The value is a bare path, not a command line, so compare it as a path.
++  if (ProgramCompare(chrome_exe).EvaluatePath(base::FilePath(app_path))) {
++    DeleteRegistryKey(root, app_path_key, WorkItem::kWow64Default);
++  }
++}
++
+ void AddUpdateDowngradeVersionItem(HKEY root,
+                                    const base::Version& current_version,
+                                    const base::Version& new_version,
+--- a/chrome/installer/setup/setup_util.h
++++ b/chrome/installer/setup/setup_util.h
+@@ -146,6 +146,12 @@ base::FilePath GetTracingServicePath(const base::FilePath& target_path,
+ bool IsHeliumVersionSchemeMigration(const base::Version& current_version,
+                                     const base::Version& new_version);
+ 
++// Deletes the App Paths\chrome.exe key under |root| if it points at
++// |chrome_exe|. Older Helium builds registered it, which made "chrome" in the
++// Run dialog launch Helium.
++void DeleteChromeAppPathsKeyIfOwned(HKEY root,
++                                    const base::FilePath& chrome_exe);
++
+ // Adds or removes downgrade version registry value.
+ void AddUpdateDowngradeVersionItem(HKEY root,
+                                    const base::Version& current_version,
+--- a/chrome/installer/setup/uninstall.cc
++++ b/chrome/installer/setup/uninstall.cc
+@@ -701,8 +701,9 @@ bool DeleteChromeRegistrationKeys(const InstallerState& installer_state,
+ 
+   std::wstring app_path_key(ShellUtil::kAppPathsRegistryKey);
+   app_path_key.push_back(base::FilePath::kSeparators[0]);
+-  app_path_key.append(installer::kChromeExe);
++  app_path_key.append(installer::kHeliumAppPathsName);
+   DeleteRegistryKey(root, app_path_key, WorkItem::kWow64Default);
++  DeleteChromeAppPathsKeyIfOwned(root, chrome_exe);
+ 
+   // Cleanup OpenWithList and OpenWithProgids:
+   // http://msdn.microsoft.com/en-us/library/bb166549
+--- a/chrome/installer/util/shell_util.cc
++++ b/chrome/installer/util/shell_util.cc
+@@ -446,7 +446,7 @@ void GetChromeAppRegistrationEntries(
+     std::vector<std::unique_ptr<RegistryEntry>>* entries) {
+   std::wstring app_path_key =
+       base::StrCat({ShellUtil::kAppPathsRegistryKey, kFilePathSeparator,
+-                    chrome_exe.BaseName().value()});
++                    installer::kHeliumAppPathsName});
+   entries->push_back(
+       std::make_unique<RegistryEntry>(app_path_key, chrome_exe.value()));
+   entries->push_back(std::make_unique<RegistryEntry>(
+--- a/chrome/installer/util/util_constants.h
++++ b/chrome/installer/util/util_constants.h
+@@ -398,6 +398,8 @@ inline constexpr wchar_t kEulaSentinelFile[] = L"EULA Accepted";
+ // LINT.ThenChange(//chrome/browser/first_run/first_run_internal_linux.cc:kEulaSentinelFile,
+ // //chrome/browser/ui/views/eula_dialog_linux_unittest.cc:kEulaSentinelFile)
+ 
++// App Paths key name, which lets "helium" be launched from the Run dialog.
++inline constexpr wchar_t kHeliumAppPathsName[] = L"helium.exe";
+ inline constexpr wchar_t kInstallBinaryDir[] = L"Application";
+ inline constexpr wchar_t kInstallerDir[] = L"Installer";
+ inline constexpr wchar_t kInstallTempDir[] = L"Temp";
