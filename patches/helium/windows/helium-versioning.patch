@@ -68,7 +68,7 @@
  </assembly>
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
-@@ -1387,7 +1387,7 @@ base::FilePath GetModulePath(std::wstrin
+@@ -1410,7 +1410,7 @@ base::FilePath GetModulePath(
    // executable's directory and return the path if it can be read. This is the
    // expected location of modules for proper installs.
    const base::FilePath module_path =
@@ -142,7 +142,7 @@
              VALUE "ProductName", "@PRODUCT_INSTALLER_FULLNAME@"
 --- a/chrome/installer/setup/BUILD.gn
 +++ b/chrome/installer/setup/BUILD.gn
-@@ -119,6 +119,7 @@ if (is_win) {
+@@ -125,6 +125,7 @@ if (is_win) {
        "//components/crx_file",
        "//components/metrics:client_info",
        "//components/metrics:metrics_pref_names",
@@ -160,7 +160,7 @@
  #include "base/win/registry.h"
  #include "base/win/security_util.h"
  #include "base/win/sid.h"
-@@ -674,10 +675,11 @@ void AddUninstallShortcutWorkItems(const
+@@ -708,10 +709,11 @@ void AddUninstallShortcutWorkItems(const
                                           InstallUtil::GetPublisherName(), true);
      install_list->AddSetRegValueWorkItem(
          reg_root, uninstall_reg, KEY_WOW64_32KEY, L"Version",
