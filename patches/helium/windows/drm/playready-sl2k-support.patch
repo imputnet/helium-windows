@@ -255,7 +255,7 @@
  #include "media/cdm/cdm_type.h"
  #include "media/media_buildflags.h"
  #include "media/mojo/buildflags.h"
-@@ -565,7 +566,9 @@ void MediaInterfaceProxy::CreateCdm(cons
+@@ -583,7 +584,9 @@ void MediaInterfaceProxy::CreateCdm(cons
      }
  
      auto cdm_info = CdmRegistryImpl::GetInstance()->GetCdmInfo(
@@ -266,7 +266,7 @@
      if (cdm_info) {
        // The MediaFoundation CDM path has no off-the-record dimension:
        // CdmDocumentServiceImpl::GetMediaFoundationCdmData reads the REGULAR
-@@ -749,10 +752,9 @@ bool MediaInterfaceProxy::ShouldUseMedia
+@@ -767,10 +770,9 @@ bool MediaInterfaceProxy::ShouldUseMedia
      const media::CdmConfig& cdm_config) {
    DVLOG(1) << __func__ << ": this=" << this << ", cdm_config=" << cdm_config;
  
