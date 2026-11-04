@@ -80,7 +80,7 @@
  
 --- a/chrome/installer/setup/installer_crash_reporter_client.cc
 +++ b/chrome/installer/setup/installer_crash_reporter_client.cc
-@@ -103,7 +103,7 @@ bool InstallerCrashReporterClient::Repor
+@@ -105,7 +105,7 @@ bool InstallerCrashReporterClient::Repor
        L"SOFTWARE\\Policies\\Google\\Chrome";
  #else
    static const wchar_t kRegistryChromePolicyKey[] =
@@ -91,15 +91,15 @@
  
 --- a/components/policy/tools/generate_policy_source.py
 +++ b/components/policy/tools/generate_policy_source.py
-@@ -28,7 +28,7 @@ from xml.sax.saxutils import escape as x
+@@ -27,7 +27,7 @@ from xml.sax.saxutils import escape as x
  
  CHROME_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Google\\\\Chrome'
  CHROME_FOR_TESTING_POLICY_KEY = CHROME_POLICY_KEY + ' for Testing'
 -CHROMIUM_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Chromium'
 +CHROMIUM_POLICY_KEY = 'SOFTWARE\\\\Policies\\\\Helium'
  PLATFORM_STRINGS = {
-     'chrome_frame': ['win'],
-     'chrome_os': ['chrome_os'],
+   'chrome_frame': ['win'],
+   'chrome_os': ['chrome_os'],
 --- a/chrome/installer/setup/setup_constants.cc
 +++ b/chrome/installer/setup/setup_constants.cc
 @@ -7,14 +7,14 @@
@@ -166,30 +166,29 @@
      parser.add_option(
 --- a/components/policy/tools/template_writers/writer_configuration.py
 +++ b/components/policy/tools/template_writers/writer_configuration.py
-@@ -27,21 +27,21 @@ def GetConfigurationForBuild(defines):
+@@ -27,20 +27,20 @@ def GetConfigurationForBuild(defines):
    if '_chromium' in defines:
      config = {
-         'build': 'chromium',
--        'app_name': 'Chromium',
-+        'app_name': 'Helium',
-         'doc_url': 'https://chromeenterprise.google/policies/',
-         'frame_name': 'Chromium Frame',
-         'os_name': 'ChromiumOS',
-         'webview_name': 'Chromium WebView',
-         'win_config': {
-             'win': {
--                'reg_mandatory_key_name': 'Software\\Policies\\Chromium',
-+                'reg_mandatory_key_name': 'Software\\Policies\\Helium',
-                 'reg_recommended_key_name':
--                'Software\\Policies\\Chromium\\Recommended',
-+                'Software\\Policies\\Helium\\Recommended',
-                 'mandatory_category_path': ['chromium'],
-                 'recommended_category_path': ['chromium_recommended'],
-                 'category_path_strings': {
--                    'chromium': 'Chromium',
--                    'chromium_recommended': 'Chromium - {doc_recommended}',
-+                    'chromium': 'Helium',
-+                    'chromium_recommended': 'Helium - {doc_recommended}',
-                 },
-                 'namespace': 'Chromium.Policies.Chromium',
-             },
+       'build': 'chromium',
+-      'app_name': 'Chromium',
++      'app_name': 'Helium',
+       'doc_url': 'https://chromeenterprise.google/policies/',
+       'frame_name': 'Chromium Frame',
+       'os_name': 'ChromiumOS',
+       'webview_name': 'Chromium WebView',
+       'win_config': {
+         'win': {
+-          'reg_mandatory_key_name': 'Software\\Policies\\Chromium',
+-          'reg_recommended_key_name': 'Software\\Policies\\Chromium\\Recommended',
++          'reg_mandatory_key_name': 'Software\\Policies\\Helium',
++          'reg_recommended_key_name': 'Software\\Policies\\Helium\\Recommended',
+           'mandatory_category_path': ['chromium'],
+           'recommended_category_path': ['chromium_recommended'],
+           'category_path_strings': {
+-            'chromium': 'Chromium',
+-            'chromium_recommended': 'Chromium - {doc_recommended}',
++            'chromium': 'Helium',
++            'chromium_recommended': 'Helium - {doc_recommended}',
+           },
+           'namespace': 'Chromium.Policies.Chromium',
+         },
