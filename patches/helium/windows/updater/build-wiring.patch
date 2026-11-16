@@ -22,7 +22,7 @@
    }
  
    # Android and ChromeOS don't support multiple browser processes, so they don't
-@@ -1621,6 +1629,17 @@ source_set("core") {
+@@ -1720,6 +1728,17 @@ source_set("core") {
    }
  
    if (is_win) {
@@ -72,7 +72,7 @@
  source_set("help") {
    public = [ "version_updater.h" ]
    public_deps = [ "//base" ]
-@@ -61,7 +65,7 @@ source_set("help") {
+@@ -65,7 +69,7 @@ source_set("help") {
          "//ui/base",
          "//ui/gfx",
        ]
