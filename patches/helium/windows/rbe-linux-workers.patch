@@ -1,16 +1,17 @@
 --- a/build/config/siso/windows.star
 +++ b/build/config/siso/windows.star
-@@ -7,10 +7,17 @@
+@@ -7,11 +7,18 @@
  load("@builtin//struct.star", "module")
  load("./clang_windows.star", "clang")
  load("./config.star", "config")
 +load("./devtools_frontend.star", "devtools_frontend")
 +load("./helium_windows.star", helium_clang = "clang")
-+
+ load("./platform.star", "platform")
+ 
 +def compiler(ctx):
 +    # NativeLink enables remote-generators on all three build hosts.
 +    return helium_clang if config.get(ctx, "remote-generators") else clang
- 
++
  def __filegroups(ctx):
      fg = {}
 -    fg.update(clang.filegroups(ctx))
@@ -19,16 +20,16 @@
      return fg
  
  __handlers = {}
-@@ -18,7 +25,8 @@ __handlers.update(clang.handlers)
+@@ -19,7 +26,8 @@ __handlers.update(clang.handlers)
  
  def __step_config(ctx, step_config):
      config.check(ctx)
 -    step_config = clang.step_config(ctx, step_config)
 +    step_config = compiler(ctx).step_config(ctx, step_config)
 +    step_config = devtools_frontend.step_config(ctx, step_config)
-     return step_config
- 
- chromium = module(
+     step_config["rules"].extend([
+         {
+             "name": "perfetto/touch_file",
 --- a/build/toolchain/rbe.gni
 +++ b/build/toolchain/rbe.gni
 @@ -93,6 +93,12 @@ if (use_siso && rbe_exec_root != rebase_
