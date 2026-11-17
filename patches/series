@@ -1,3 +1,5 @@
+upstream-fixes/backport-clang-fpm-helper-linkage.patch
+
 ungoogled-chromium/windows/windows-disable-reorder-fix-linking.patch
 ungoogled-chromium/windows/windows-disable-win-build-output.patch
 ungoogled-chromium/windows/windows-disable-encryption.patch

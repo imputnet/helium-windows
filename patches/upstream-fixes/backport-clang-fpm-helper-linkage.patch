@@ -1,0 +1,40 @@
+From 1ac17ec2bfdef467dfcd7aabd8c079c83cac4c13 Mon Sep 17 00:00:00 2001
+From: stephenduong1004 <stephenduong@google.com>
+Date: Wed, 4 Nov 2026 11:24:03 -0500
+Subject: [PATCH] [Clang][AArch64] Give FPM scale helper declarations C linkage
+ in arm_vector_types.h (#238025)
+
+Fixes 22287cb048390352d95d8a4925dfb9f96835444d.
+
+#227722 defined `__arm_set_fpm_lscale`, `__arm_set_fpm_nscale`, and
+`__arm_set_fpm_lscale2` as `TargetLibBuiltin` with `RequireDeclaration`
+and replaced their `static __inline__` definitions in
+`arm_vector_types.h` with plain declarations.
+Because `TargetLibBuiltin` lazily creates an implicit declaration with C
+language linkage in C++, including `<arm_neon.h>` inside an explicit
+`extern "C++" { ... }` block (commonly hit on Windows ARM64 where UCRT's
+`wchar.h` includes `<arm_neon.h>`) fails with `error: declaration of
+'__arm_set_fpm_lscale' has a different language linkage`.
+
+This PR wraps the three declarations in `extern "C"` under C++ to match
+the builtin linkage (consistent with `arm_acle.h` and `arm_sve.h`). This
+is a language linkage issue, separate from the `uint64_t` type mismatch
+in #234780.
+--- a/third_party/llvm-build/Release+Asserts/lib/clang/24/include/arm_vector_types.h
++++ b/third_party/llvm-build/Release+Asserts/lib/clang/24/include/arm_vector_types.h
+@@ -58,9 +58,15 @@
+   return (__fpm & ~0x8000ull) | ((fpm_t)__behaviour << 15u);
+ }
+ 
++#ifdef __cplusplus
++extern "C" {
++#endif
+ __inline__ fpm_t __attribute__((__always_inline__, __nodebug__)) __arm_set_fpm_lscale(fpm_t __fpm, uint64_t __scale);
+ __inline__ fpm_t __attribute__((__always_inline__, __nodebug__)) __arm_set_fpm_nscale(fpm_t __fpm, int64_t __scale);
+ __inline__ fpm_t __attribute__((__always_inline__, __nodebug__))  __arm_set_fpm_lscale2(fpm_t __fpm, uint64_t __scale);
++#ifdef __cplusplus
++}
++#endif
+ 
+ typedef __attribute__((neon_vector_type(8))) int8_t int8x8_t;
+ typedef __attribute__((neon_vector_type(16))) int8_t int8x16_t;
