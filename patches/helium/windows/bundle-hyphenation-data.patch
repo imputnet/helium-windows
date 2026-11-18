@@ -1,0 +1,27 @@
+--- a/chrome/installer/mini_installer/chrome.release
++++ b/chrome/installer/mini_installer/chrome.release
+@@ -61,6 +61,11 @@ MEIPreload\manifest.json: %(VersionDir)s
+ MEIPreload\preloaded_data.pb: %(VersionDir)s\MEIPreload\
+ 
+ #
++# Hyphenation dictionaries
++#
++hyphen-data\*.*: %(VersionDir)s\hyphen-data\
++
++#
+ # IWA Key Distribution
+ #
+ IwaKeyDistribution\iwa-key-distribution.pb: %(VersionDir)s\IwaKeyDistribution\
+--- a/chrome/tools/build/win/FILES.cfg
++++ b/chrome/tools/build/win/FILES.cfg
+@@ -931,6 +931,10 @@ FILES = [
+     'buildtype': ['official'],
+     'archive': 'hyphens-data.zip',
+   },
++  {
++    'filename': 'hyphen-data/*',
++    'buildtype': ['official'],
++  },
+   # Tracing service files:
+   {
+     'filename': 'elevated_tracing_service.exe',
