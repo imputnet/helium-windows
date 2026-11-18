@@ -22,7 +22,7 @@ is a language linkage issue, separate from the `uint64_t` type mismatch
 in #234780.
 --- a/third_party/llvm-build/Release+Asserts/lib/clang/24/include/arm_vector_types.h
 +++ b/third_party/llvm-build/Release+Asserts/lib/clang/24/include/arm_vector_types.h
-@@ -58,9 +58,15 @@
+@@ -58,9 +58,15 @@ __arm_set_fpm_overflow_cvt(fpm_t __fpm,
    return (__fpm & ~0x8000ull) | ((fpm_t)__behaviour << 15u);
  }
  
