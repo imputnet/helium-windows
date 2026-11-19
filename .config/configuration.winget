@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+# Machine setup for building Helium on Windows. devutils\setup.ps1 applies it with:
+#   winget configure -f .config\configuration.winget
+properties:
+  configurationVersion: 0.2.0
+  assertions:
+    - resource: Microsoft.Windows.Developer/OsVersion
+      directives:
+        description: Require Windows 11 22H2 or newer, which has Dev Drives
+        allowPrerelease: true
+      settings:
+        MinVersion: '10.0.22621'
+  resources:
+    - resource: Microsoft.Windows.Developer/DeveloperMode
+      directives:
+        description: Enable Developer Mode, which allows symbolic links
+        allowPrerelease: true
+        securityContext: elevated
+      settings:
+        Ensure: Present
+    - resource: PSDscResources/Registry
+      directives:
+        description: Lift the MAX_PATH limit for the build scripts
+        securityContext: elevated
+      settings:
+        Key: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem
+        ValueName: LongPathsEnabled
+        ValueType: Dword
+        ValueData: '1'
+        Force: true
+        Ensure: Present
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git
+      directives:
+        description: Install Git for Windows
+        allowPrerelease: true
+      settings:
+        id: Git.Git
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: python
+      directives:
+        description: Install Python
+        allowPrerelease: true
+      settings:
+        id: Python.Python.3.14
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: 7zip
+      directives:
+        description: Install 7-Zip, which unpacks the Chromium archives
+        allowPrerelease: true
+      settings:
+        id: 7zip.7zip
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visualstudio
+      directives:
+        description: Install Visual Studio Community
+        allowPrerelease: true
+      settings:
+        id: Microsoft.VisualStudio.Community
+        source: winget
+    - resource: Microsoft.VisualStudio.DSC/VSComponents
+      dependsOn:
+        - visualstudio
+      directives:
+        description: Install the C++ toolchain and Windows SDK that Chromium needs
+        allowPrerelease: true
+        securityContext: elevated
+      settings:
+        productId: Microsoft.VisualStudio.Product.Community
+        channelId: VisualStudio.18.Release
+        vsConfigFile: '${WinGetConfigRoot}\helium.vsconfig'
+        includeRecommended: true

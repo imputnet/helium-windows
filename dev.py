@@ -65,7 +65,7 @@ def environment():
 def check_requirements():
     for repo in (ROOT_DIR, HELIUM_REPO):
         autocrlf = subprocess.run(['git', '-C', str(repo), 'config', 'core.autocrlf'],
-                                  text=True, stdout=subprocess.PIPE).stdout.strip()
+                                  text=True, stdout=subprocess.PIPE).stdout.strip().lower()
         if autocrlf not in ('', 'false'):
             raise Abort(f'{repo} has core.autocrlf={autocrlf}, which rewrites line endings in '
                         'patches and sources\nset it to false and check the repository out again')
