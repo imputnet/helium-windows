@@ -60,9 +60,9 @@ def write_args(arm, dev):
     (OUT_DIR / 'args.gn').write_text(args(arm, dev), encoding=ENCODING)
 
 
-def gen():
+def gen(*extra_args):
     run_build_process('buildtools\\win\\gn.exe', 'gen', 'out\\Default', '--fail-on-unused-args',
-                      cwd=SOURCE_TREE)
+                      *extra_args, cwd=SOURCE_TREE)
 
 
 def autoninja(targets, jobs=None, timeout=None):

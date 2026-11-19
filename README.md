@@ -81,44 +81,41 @@ An efficient way to delete large amounts of files is using `Remove-Item PATH -Re
 
 ## Developer info
 
-### First-time setup
+### Setting up a development environment
 
-1. [Setup MSYS2](http://www.msys2.org/)
-2. Run the following in a "MSYS2 MSYS" shell:
+In addition to the build requirements above, you need:
 
-```sh
-pacman -S quilt python3 vim tar
-# By default, there doesn't seem to be a vi command for less, quilt edit, etc.
-ln -s /usr/bin/vim /usr/bin/vi
+* [q](https://github.com/imputnet/q/releases/latest), saved as `q.exe` somewhere on `PATH`.
+  It uses GNU `diff` and `patch` from Chromium's bundled Git, or from Git for Windows.
+* `core.autocrlf` set to `false` before cloning (`git config --global core.autocrlf false`).
+  Converted line endings break patches, so `he` refuses to run otherwise.
+* PowerShell allowed to run local scripts: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+* Preferably, the checkout on a [Dev Drive](https://learn.microsoft.com/en-us/windows/dev-drive/).
+  Builds are faster there, and `he wt` uses its block cloning to copy the source tree.
+
+Then, in PowerShell (the build scripts set up the Visual Studio environment themselves):
+
+```powershell
+. .\dev.ps1
+he setup    # or `he setup -c` to clone Chromium instead of downloading it
+he build
+he run
 ```
 
-### Updating patches and pruning list
+Run `he` to list the other commands, such as `he sub`/`he unsub` for domain and name
+substitution, `he pull` to update both repositories, and `he wt` for worktrees.
 
-1. Start `Developer Command Prompt for VS` and `MSYS2 MSYS` shell and navigate to source folder
-	1. `Developer Command Prompt for VS`
-		* `cd c:\path\to\repo\helium-windows`
-	1. `MSYS2 MSYS`
-		* `cd /path/to/repo/helium-windows`
-		* You can use Git Bash to determine the path to this repo
-		* Or, you can find it yourself via `/<drive letter>/<path with forward slashes>`
-1. Clone sources
-	**`Developer Command Prompt for VS`**
-	* `python3 helium-chromium\utils\clone.py -o build\src`
-1. Update pruning list
-	**`Developer Command Prompt for VS`**
-	* `python3 helium-chromium\devutils\update_lists.py -t build\src --domain-regex helium-chromium\domain_regex.list`
-1. Update patches
-	**`MSYS2 MSYS`**
-	1. Setup patches and shell to update patches
-		* `./devutils/update_patches.sh merge`
-		* `source devutils/set_quilt_vars.sh`
-	1. Go into the source tree
-		* `cd build/src`
-	1. Use quilt to refresh patches. See ungoogled-chromium's [docs/developing.md](https://github.com/ungoogled-software/ungoogled-chromium/blob/master/docs/developing.md#updating-patches) section "Updating patches" for more details
-	1. Go back to repo root
-		* `cd ../..`
-	1. Remove all patches introduced by helium-chromium
-		* `./devutils/update_patches.sh unmerge`
-	1. Sanity checking for consistency in series file
-		* `./devutils/check_patch_files.sh`
-1. Use Git to add changes and commit
+### Updating patches
+
+`he setup` merges the helium-chromium patches into `patches` and applies them all with q.
+Use `q` (or `quilt`, an alias for it) in `build\src` to edit and refresh patches. See
+ungoogled-chromium's [docs/developing.md](https://github.com/ungoogled-software/ungoogled-chromium/blob/master/docs/developing.md#updating-patches)
+section "Updating patches" for the workflow. Before committing, run `he unmerge` to move the
+shared patches back, then `.\devutils\check_patch_files.sh` from Git Bash to check the series.
+Run `he merge` to continue working afterwards.
+
+### Updating the pruning list
+
+```powershell
+python helium-chromium\devutils\update_lists.py -t build\src --domain-regex helium-chromium\domain_regex.list
+```
