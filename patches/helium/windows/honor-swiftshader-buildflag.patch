@@ -37,7 +37,7 @@
  vulkan-1.dll: %(VersionDir)s\
  v8_context_snapshot.bin: %(VersionDir)s\
  #
-@@ -113,3 +111,7 @@ snapshot_blob.bin: %(VersionDir)s\
+@@ -118,3 +116,7 @@ snapshot_blob.bin: %(VersionDir)s\
  # this DLL may be present in the build dir if Dawn tests are built, in which case we
  # do not want to include it in the installer.
  dxcompiler.dll: %(VersionDir)s\
