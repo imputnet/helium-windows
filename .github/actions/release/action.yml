@@ -36,13 +36,9 @@ runs:
           printf 'See [this GitHub Actions Run](%s) for the [Workflow file](%s/workflow) used as well as the build logs and artifacts\n' "$GH_RUN_HREF" "$GH_RUN_HREF"
         } | tee ./github_release_note.md
     - name: Publish release
-      id: publish
-      uses: imputnet/action-gh-release@v2.5
+      uses: imputnet/immutable-release@v1
       with:
-        fail_on_unmatched_files: true
-        body_path: ./github_release_note.md
+        tag: ${{ inputs.version }}
         prerelease: true
-        name: ${{ inputs.version }}
-        tag_name: ${{ inputs.version }}
-        files: |
-          release-artifacts/helium*
+        notes-file: ./github_release_note.md
+        files: release-artifacts/helium*
