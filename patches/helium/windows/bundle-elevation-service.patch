@@ -18,3 +18,39 @@
  eventlog_provider.dll: %(VersionDir)s\
  icudtl.dat: %(VersionDir)s\
  libEGL.dll: %(VersionDir)s\
+--- a/chrome/elevation_service/elevation_service_idl.idl
++++ b/chrome/elevation_service/elevation_service_idl.idl
+@@ -248,6 +248,17 @@ interface IElevator2ChromeCanary : IElev
+ };
+ 
+ [
++  object,
++  oleautomation,
++  uuid(C89A04FF-00C6-4966-94B2-5AFEC6FED93A),
++  helpstring("IElevator2Helium Interface"),
++  pointer_default(unique)
++]
++interface IElevator2Helium : IElevator2
++{
++};
++
++[
+   uuid(0014D784-7012-4A79-8AB6-ADDB8193A06E),
+   version(1.0),
+   helpstring("Elevator 1.0 Type Library")
+@@ -267,4 +278,5 @@ library ElevatorLib {
+   interface IElevator2ChromeBeta;
+   interface IElevator2ChromeDev;
+   interface IElevator2ChromeCanary;
++  interface IElevator2Helium;
+ };
+--- a/chrome/elevation_service/elevator.h
++++ b/chrome/elevation_service/elevator.h
+@@ -98,6 +98,7 @@ class Elevator
+           IElevator2ChromeBeta,
+           IElevator2ChromeDev,
+           IElevator2ChromeCanary,
++          IElevator2Helium,
+ 
+           // This class also implements all the Elevator methods.
+           IElevator,

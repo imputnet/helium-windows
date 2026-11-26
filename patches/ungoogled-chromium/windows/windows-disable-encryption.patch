@@ -56,3 +56,26 @@
    DATA_BLOB input;
    input.pbData =
        const_cast<BYTE*>(reinterpret_cast<const BYTE*>(ciphertext.data()));
+--- a/chrome/browser/os_crypt/app_bound_encryption_win.cc
++++ b/chrome/browser/os_crypt/app_bound_encryption_win.cc
+@@ -12,6 +12,7 @@
+ #include <wrl/client.h>
+ 
+ #include "base/check_op.h"
++#include "base/command_line.h"
+ #include "base/compiler_specific.h"
+ #include "base/feature_list.h"
+ #include "base/files/file_path.h"
+@@ -93,6 +94,12 @@ SupportLevel GetAppBoundEncryptionSuppor
+     return SupportLevel::kDisabledByPolicy;
+   }
+ 
++  // Like the policy above, --disable-encryption stops new data from being bound
++  // to this machine, while existing data can still be decrypted.
++  if (base::CommandLine::ForCurrentProcess()->HasSwitch("disable-encryption")) {
++    return SupportLevel::kDisabledByPolicy;
++  }
++
+   // Note: this must be pulled from pref rather than calling
+   // `IsLocalSyncEnabled` to ensure that it's managed.
+   if (local_state->IsManagedPreference(
