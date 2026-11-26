@@ -54,3 +54,21 @@
  
            // This class also implements all the Elevator methods.
            IElevator,
+--- a/chrome/elevation_service/elevator.cc
++++ b/chrome/elevation_service/elevator.cc
+@@ -64,12 +64,9 @@ HRESULT Elevator::RunRecoveryCRXElevated
+                                          const wchar_t* session_id,
+                                          DWORD caller_proc_id,
+                                          ULONG_PTR* proc_handle) {
+-  base::win::ScopedHandle scoped_proc_handle;
+-  HRESULT hr =
+-      RunChromeRecoveryCRX(base::FilePath(crx_path), browser_version,
+-                           session_id, caller_proc_id, &scoped_proc_handle);
+-  *proc_handle = base::win::HandleToUint32(scoped_proc_handle.Take());
+-  return hr;
++  // Helium never receives Google's recovery component, so there is no reason
++  // to let any local caller run its CRX as SYSTEM.
++  return E_NOTIMPL;
+ }
+ 
+ HRESULT Elevator::EncryptData(ProtectionLevel protection_level,

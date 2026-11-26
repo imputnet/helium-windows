@@ -1,0 +1,106 @@
+--- a/chrome/elevation_service/elevator.cc
++++ b/chrome/elevation_service/elevator.cc
+@@ -253,6 +253,11 @@ HRESULT Elevator::RunIsolatedChrome(DWOR
+                                     [[maybe_unused]] BSTR* log,
+                                     ULONG_PTR* proc_handle,
+                                     DWORD* last_error) {
++#if !BUILDFLAG(GOOGLE_CHROME_BRANDING)
++  // Only Chrome-branded builds apply isolation to the launched browser, so
++  // reject the launch rather than report an unisolated browser as isolated.
++  return E_NOTIMPL;
++#else
+   *last_error = ERROR_SUCCESS;
+   bool success = false;
+   absl::Cleanup maybe_set_last_error = [last_error, &success]() {
+@@ -467,6 +472,7 @@ HRESULT Elevator::RunIsolatedChrome(DWOR
+ 
+   success = true;
+   return S_OK;
++#endif  // !BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ }
+ 
+ HRESULT Elevator::AcceptInvitation(const wchar_t* server_name) {
+--- a/chrome/browser/win/isolated_browser/isolated_browser_support.cc
++++ b/chrome/browser/win/isolated_browser/isolated_browser_support.cc
+@@ -29,6 +29,7 @@
+ #include "base/win/scoped_com_initializer.h"
+ #include "base/win/security_descriptor.h"
+ #include "base/win/sid.h"
++#include "build/branding_buildflags.h"
+ #include "chrome/browser/os_crypt/app_bound_encryption_provider_win.h"
+ #include "chrome/common/chrome_paths_internal.h"
+ #include "chrome/common/chrome_switches.h"
+@@ -316,8 +317,17 @@ base::expected<IsolatedBrowserProcess, H
+                                 std::move(iocp));
+ }
+ 
++bool IsIsolationSupported() {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
++  return install_static::IsSystemInstall();
++#else
++  // Only Chrome-branded builds apply isolation when launching the browser.
++  return false;
++#endif
++}
++
+ bool IsIsolationEnabled(const base::CommandLine* command_line) {
+-  if (!install_static::IsSystemInstall()) {
++  if (!IsIsolationSupported()) {
+     return false;
+   }
+ 
+@@ -432,7 +442,7 @@ void SetIsolationState(
+   // directory. Custom user data directories (e.g. specified via
+   // --user-data-dir) run unisolated, so avoid writing isolation state to
+   // the registry to prevent cross-profile contamination.
+-  if (!install_static::IsSystemInstall() ||
++  if (!IsIsolationSupported() ||
+       !chrome::IsUsingDefaultDataDirectory().value_or(false)) {
+     if (completed) {
+       base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+--- a/chrome/browser/win/isolated_browser/isolated_browser_support.h
++++ b/chrome/browser/win/isolated_browser/isolated_browser_support.h
+@@ -54,6 +54,9 @@ class IsolatedBrowserProcess {
+   base::win::ScopedHandle iocp_;
+ };
+ 
++// Returns true if this build and install can launch the isolated browser.
++bool IsIsolationSupported();
++
+ // Returns true if the platform configuration indicates that the browser process
+ // with the specified `command_line` should launch the isolated browser. To
+ // check for isolation merely being enabled by configuration, pass nullptr.
+--- a/chrome/browser/ui/webui/settings/BUILD.gn
++++ b/chrome/browser/ui/webui/settings/BUILD.gn
+@@ -410,7 +410,10 @@ source_set("impl") {
+ 
+   if (is_win) {
+     sources += [ "settings_utils_win.cc" ]
+-    deps += [ "//chrome/browser/win" ]
++    deps += [
++      "//chrome/browser/win",
++      "//chrome/browser/win/isolated_browser:isolated_browser_support",
++    ]
+   }
+ 
+   if (is_linux) {
+--- a/chrome/browser/ui/webui/settings/settings_ui.cc
++++ b/chrome/browser/ui/webui/settings/settings_ui.cc
+@@ -221,7 +221,7 @@
+ #endif
+ 
+ #if BUILDFLAG(IS_WIN)
+-#include "chrome/install_static/install_util.h"
++#include "chrome/browser/win/isolated_browser/isolated_browser_support.h"
+ #endif  // BUILDFLAG(IS_WIN)
+ 
+ #if BUILDFLAG(ENABLE_VR)
+@@ -554,7 +554,7 @@ SettingsUI::SettingsUI(content::WebUI* w
+ #if BUILDFLAG(IS_WIN)
+   html_source->AddBoolean(
+       "showProcessIsolationSetting",
+-      install_static::IsSystemInstall() &&
++      chrome::IsIsolationSupported() &&
+           (base::FeatureList::IsEnabled(features::kProcessIsolationSettings) ||
+            g_browser_process->local_state()->GetBoolean(
+                prefs::kProcessIsolationEnabled)));
