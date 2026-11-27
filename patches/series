@@ -17,6 +17,7 @@ helium/windows/change-branding.patch
 helium/windows/helium-versioning.patch
 helium/windows/setup-chromium-version-migration.patch
 helium/windows/bundle-elevation-service.patch
+helium/windows/disable-process-isolation.patch
 helium/windows/bundle-hyphenation-data.patch
 helium/windows/rbe-linux-workers.patch
 helium/windows/honor-swiftshader-buildflag.patch
