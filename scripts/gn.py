@@ -29,8 +29,6 @@ def args(arm, dev):
     windows_flags = (ROOT_DIR / 'flags.windows.gn').read_text(encoding=ENCODING)
     if arm:
         windows_flags = windows_flags.replace('x64', 'arm64')
-    if dev:
-        windows_flags += '\nchrome_pgo_phase=0\n'
 
     if remoteexec.enabled():
         windows_flags += 'use_remoteexec = true\n'
